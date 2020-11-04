@@ -18,7 +18,7 @@ main =
 
 
 type alias Model =
-    Cell
+    List Cell
 
 
 type alias Cell =
@@ -70,7 +70,13 @@ type Msg
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Cell ( 0, 0 ) Base3 (Just (Standard Standard1 Bonus)), Cmd.none )
+    ( [ Cell ( 0, 0 ) Base3 <| Just <| Standard Standard1 Bonus
+      , Cell ( 0, 1 ) Base2 <| Nothing
+      , Cell ( 1, 0 ) Base2 <| Just <| Disappearing 4 NoBonus
+      , Cell ( 1, 1 ) Base1 <| Nothing
+      ]
+    , Cmd.none
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -81,17 +87,35 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Ui.layout [ Ui.padding 15 ] <|
-        Ui.el
-            [ Background.color <| baseColour model.base
-            , Ui.width <| Ui.px 100
-            , Ui.height <| Ui.px 100
-            , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
-            , Border.rounded 15
-            , Border.color <| baseColour <| nextBase model.base
-            ]
-        <|
-            Ui.el [ Ui.centerX, Ui.centerY ] <|
-                viewContent model
+        let
+            viewRow y =
+                getRow y model
+                    |> List.map viewCell
+                    |> Ui.row [ Ui.spacing 0 ]
+        in
+        List.range 0 1
+            |> List.map viewRow
+            |> Ui.column [ Ui.spacing 0 ]
+
+
+getRow : Int -> Model -> List Cell
+getRow row model =
+    List.filter (\cell -> Tuple.first cell.coord == row) model
+
+
+viewCell : Cell -> Ui.Element Msg
+viewCell cell =
+    Ui.el
+        [ Background.color <| baseColour cell.base
+        , Ui.width <| Ui.px 100
+        , Ui.height <| Ui.px 100
+        , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
+        , Border.rounded 15
+        , Border.color <| baseColour <| nextBase cell.base
+        ]
+    <|
+        Ui.el [ Ui.centerX, Ui.centerY ] <|
+            viewContent cell
 
 
 baseColour : Base -> Ui.Color
