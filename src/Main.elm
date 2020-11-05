@@ -4,7 +4,7 @@ import Browser
 import Element as Ui
 import Element.Background as Background
 import Element.Border as Border
-import Html exposing (Html)
+import Html exposing (Attribute, Html)
 
 
 main : Program () Model Msg
@@ -64,6 +64,13 @@ type Bonus
     | NoBonus
 
 
+type Direction
+    = Above
+    | Right
+    | Below
+    | Left
+
+
 type Msg
     = NoOp
 
@@ -72,8 +79,20 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( [ Cell ( 0, 0 ) Base3 <| Just <| Standard Standard1 Bonus
       , Cell ( 0, 1 ) Base2 <| Nothing
+      , Cell ( 0, 2 ) Base1 <| Nothing
+      , Cell ( 0, 3 ) Base2 <| Nothing
       , Cell ( 1, 0 ) Base2 <| Just <| Disappearing 4 NoBonus
       , Cell ( 1, 1 ) Base1 <| Nothing
+      , Cell ( 1, 2 ) Base1 <| Nothing
+      , Cell ( 1, 3 ) Base3 <| Nothing
+      , Cell ( 2, 0 ) Base3 <| Nothing
+      , Cell ( 2, 1 ) Base2 <| Nothing
+      , Cell ( 2, 2 ) Base3 <| Nothing
+      , Cell ( 2, 3 ) Base1 <| Nothing
+      , Cell ( 3, 0 ) Base1 <| Nothing
+      , Cell ( 3, 1 ) Base3 <| Nothing
+      , Cell ( 3, 2 ) Base3 <| Nothing
+      , Cell ( 3, 3 ) Base2 <| Nothing
       ]
     , Cmd.none
     )
@@ -90,10 +109,10 @@ view model =
         let
             viewRow y =
                 getRow y model
-                    |> List.map viewCell
+                    |> List.map (viewCell model)
                     |> Ui.row [ Ui.spacing 0 ]
         in
-        List.range 0 1
+        List.range 0 3
             |> List.map viewRow
             |> Ui.column [ Ui.spacing 0 ]
 
@@ -103,19 +122,85 @@ getRow row model =
     List.filter (\cell -> Tuple.first cell.coord == row) model
 
 
-viewCell : Cell -> Ui.Element Msg
-viewCell cell =
+viewCell : Model -> Cell -> Ui.Element Msg
+viewCell model cell =
     Ui.el
         [ Background.color <| baseColour cell.base
         , Ui.width <| Ui.px 100
         , Ui.height <| Ui.px 100
         , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
-        , Border.rounded 15
-        , Border.color <| baseColour <| nextBase cell.base
+        , roundedCorners model cell
+        , Border.color <|
+            baseColour <|
+                if neighbourBase model cell.coord Below == Just cell.base then
+                    cell.base
+
+                else
+                    nextBase cell.base
         ]
     <|
         Ui.el [ Ui.centerX, Ui.centerY ] <|
             viewContent cell
+
+
+roundedCorners : Model -> Cell -> Ui.Attribute Msg
+roundedCorners model cell =
+    let
+        round match =
+            case match of
+                True ->
+                    0
+
+                False ->
+                    15
+    in
+    Border.roundEach
+        { topRight = cornerBaseMatch model cell [ Above, Right ] |> round
+        , bottomRight = cornerBaseMatch model cell [ Right, Below ] |> round
+        , bottomLeft = cornerBaseMatch model cell [ Below, Left ] |> round
+        , topLeft = cornerBaseMatch model cell [ Left, Above ] |> round
+        }
+
+
+cornerBaseMatch : Model -> Cell -> List Direction -> Bool
+cornerBaseMatch model cell directions =
+    let
+        neighbourBases : List Base
+        neighbourBases =
+            List.map (neighbourBase model cell.coord) directions
+                |> List.filterMap identity
+    in
+    List.member cell.base neighbourBases
+
+
+neighbourBase : Model -> ( Int, Int ) -> Direction -> Maybe Base
+neighbourBase model coord direction =
+    Maybe.map .base <| neighbour model coord direction
+
+
+neighbour : Model -> ( Int, Int ) -> Direction -> Maybe Cell
+neighbour model ( x, y ) direction =
+    let
+        neighbourCoord =
+            case direction of
+                Above ->
+                    ( x - 1, y )
+
+                Right ->
+                    ( x, y + 1 )
+
+                Below ->
+                    ( x + 1, y )
+
+                Left ->
+                    ( x, y - 1 )
+    in
+    getCell model neighbourCoord
+
+
+getCell : Model -> ( Int, Int ) -> Maybe Cell
+getCell model coord =
+    List.filter (\cell -> cell.coord == coord) model |> List.head
 
 
 baseColour : Base -> Ui.Color
