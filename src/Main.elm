@@ -5,6 +5,7 @@ import Element as Ui
 import Element.Background as Background
 import Element.Border as Border
 import Html exposing (Attribute, Html)
+import Random
 
 
 main : Program () Model Msg
@@ -18,6 +19,12 @@ main =
 
 
 type alias Model =
+    { initialInt : Int
+    , board : Board
+    }
+
+
+type alias Board =
     List Cell
 
 
@@ -77,23 +84,26 @@ type Msg
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( [ Cell ( 0, 0 ) Base3 <| Just <| Standard Standard1 Bonus
-      , Cell ( 0, 1 ) Base2 <| Nothing
-      , Cell ( 0, 2 ) Base1 <| Nothing
-      , Cell ( 0, 3 ) Base2 <| Nothing
-      , Cell ( 1, 0 ) Base2 <| Just <| Disappearing 4 NoBonus
-      , Cell ( 1, 1 ) Base1 <| Nothing
-      , Cell ( 1, 2 ) Base1 <| Nothing
-      , Cell ( 1, 3 ) Base3 <| Nothing
-      , Cell ( 2, 0 ) Base3 <| Nothing
-      , Cell ( 2, 1 ) Base2 <| Nothing
-      , Cell ( 2, 2 ) Base3 <| Nothing
-      , Cell ( 2, 3 ) Base1 <| Nothing
-      , Cell ( 3, 0 ) Base1 <| Nothing
-      , Cell ( 3, 1 ) Base3 <| Nothing
-      , Cell ( 3, 2 ) Base3 <| Nothing
-      , Cell ( 3, 3 ) Base2 <| Nothing
-      ]
+    ( { initialInt = 12345
+      , board =
+            [ Cell ( 0, 0 ) Base3 <| Just <| Standard Standard1 Bonus
+            , Cell ( 0, 1 ) Base2 <| Nothing
+            , Cell ( 0, 2 ) Base1 <| Nothing
+            , Cell ( 0, 3 ) Base2 <| Nothing
+            , Cell ( 1, 0 ) Base2 <| Just <| Disappearing 4 NoBonus
+            , Cell ( 1, 1 ) Base1 <| Nothing
+            , Cell ( 1, 2 ) Base1 <| Nothing
+            , Cell ( 1, 3 ) Base3 <| Nothing
+            , Cell ( 2, 0 ) Base3 <| Nothing
+            , Cell ( 2, 1 ) Base2 <| Nothing
+            , Cell ( 2, 2 ) Base3 <| Nothing
+            , Cell ( 2, 3 ) Base1 <| Nothing
+            , Cell ( 3, 0 ) Base1 <| Nothing
+            , Cell ( 3, 1 ) Base3 <| Nothing
+            , Cell ( 3, 2 ) Base3 <| Nothing
+            , Cell ( 3, 3 ) Base2 <| Nothing
+            ]
+      }
     , Cmd.none
     )
 
@@ -108,8 +118,8 @@ view model =
     Ui.layout [ Ui.padding 15 ] <|
         let
             viewRow y =
-                getRow y model
-                    |> List.map (viewCell model)
+                getRow y model.board
+                    |> List.map (viewCell model.board)
                     |> Ui.row [ Ui.spacing 0 ]
         in
         List.range 0 3
@@ -117,22 +127,22 @@ view model =
             |> Ui.column [ Ui.spacing 0 ]
 
 
-getRow : Int -> Model -> List Cell
-getRow row model =
-    List.filter (\cell -> Tuple.first cell.coord == row) model
+getRow : Int -> Board -> List Cell
+getRow row board =
+    List.filter (\cell -> Tuple.first cell.coord == row) board
 
 
-viewCell : Model -> Cell -> Ui.Element Msg
-viewCell model cell =
+viewCell : Board -> Cell -> Ui.Element Msg
+viewCell board cell =
     Ui.el
         [ Background.color <| baseColour cell.base
         , Ui.width <| Ui.px 100
         , Ui.height <| Ui.px 100
         , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
-        , roundedCorners model cell
+        , roundedCorners board cell
         , Border.color <|
             baseColour <|
-                if neighbourBase model cell.coord Below == Just cell.base then
+                if neighbourBase board cell.coord Below == Just cell.base then
                     cell.base
 
                 else
@@ -143,8 +153,8 @@ viewCell model cell =
             viewContent cell
 
 
-roundedCorners : Model -> Cell -> Ui.Attribute Msg
-roundedCorners model cell =
+roundedCorners : Board -> Cell -> Ui.Attribute Msg
+roundedCorners board cell =
     let
         round match =
             case match of
@@ -155,31 +165,31 @@ roundedCorners model cell =
                     15
     in
     Border.roundEach
-        { topRight = cornerBaseMatch model cell [ Above, Right ] |> round
-        , bottomRight = cornerBaseMatch model cell [ Right, Below ] |> round
-        , bottomLeft = cornerBaseMatch model cell [ Below, Left ] |> round
-        , topLeft = cornerBaseMatch model cell [ Left, Above ] |> round
+        { topRight = cornerBaseMatch board cell [ Above, Right ] |> round
+        , bottomRight = cornerBaseMatch board cell [ Right, Below ] |> round
+        , bottomLeft = cornerBaseMatch board cell [ Below, Left ] |> round
+        , topLeft = cornerBaseMatch board cell [ Left, Above ] |> round
         }
 
 
-cornerBaseMatch : Model -> Cell -> List Direction -> Bool
-cornerBaseMatch model cell directions =
+cornerBaseMatch : Board -> Cell -> List Direction -> Bool
+cornerBaseMatch board cell directions =
     let
         neighbourBases : List Base
         neighbourBases =
-            List.map (neighbourBase model cell.coord) directions
+            List.map (neighbourBase board cell.coord) directions
                 |> List.filterMap identity
     in
     List.member cell.base neighbourBases
 
 
-neighbourBase : Model -> ( Int, Int ) -> Direction -> Maybe Base
-neighbourBase model coord direction =
-    Maybe.map .base <| neighbour model coord direction
+neighbourBase : Board -> ( Int, Int ) -> Direction -> Maybe Base
+neighbourBase board coord direction =
+    Maybe.map .base <| neighbour board coord direction
 
 
-neighbour : Model -> ( Int, Int ) -> Direction -> Maybe Cell
-neighbour model ( x, y ) direction =
+neighbour : Board -> ( Int, Int ) -> Direction -> Maybe Cell
+neighbour board ( x, y ) direction =
     let
         neighbourCoord =
             case direction of
@@ -195,12 +205,12 @@ neighbour model ( x, y ) direction =
                 Left ->
                     ( x, y - 1 )
     in
-    getCell model neighbourCoord
+    getCell board neighbourCoord
 
 
-getCell : Model -> ( Int, Int ) -> Maybe Cell
-getCell model coord =
-    List.filter (\cell -> cell.coord == coord) model |> List.head
+getCell : Board -> ( Int, Int ) -> Maybe Cell
+getCell board coord =
+    List.filter (\cell -> cell.coord == coord) board |> List.head
 
 
 baseColour : Base -> Ui.Color
