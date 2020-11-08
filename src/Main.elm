@@ -4,8 +4,7 @@ import Browser
 import Element as Ui
 import Element.Background as Background
 import Element.Border as Border
-import Html exposing (Attribute, Html)
-import Random
+import Html exposing (Html)
 
 
 main : Program () Model Msg
@@ -87,19 +86,19 @@ init _ =
     ( { initialInt = 12345
       , board =
             [ Cell ( 0, 0 ) Base3 <| Just <| Standard Standard1 Bonus
-            , Cell ( 0, 1 ) Base2 <| Nothing
-            , Cell ( 0, 2 ) Base1 <| Nothing
-            , Cell ( 0, 3 ) Base2 <| Nothing
-            , Cell ( 1, 0 ) Base2 <| Just <| Disappearing 4 NoBonus
-            , Cell ( 1, 1 ) Base1 <| Nothing
-            , Cell ( 1, 2 ) Base1 <| Nothing
-            , Cell ( 1, 3 ) Base3 <| Nothing
-            , Cell ( 2, 0 ) Base3 <| Nothing
-            , Cell ( 2, 1 ) Base2 <| Nothing
-            , Cell ( 2, 2 ) Base3 <| Nothing
-            , Cell ( 2, 3 ) Base1 <| Nothing
-            , Cell ( 3, 0 ) Base1 <| Nothing
-            , Cell ( 3, 1 ) Base3 <| Nothing
+            , Cell ( 0, 1 ) Base2 <| Just <| Standard Standard2 Bonus
+            , Cell ( 0, 2 ) Base1 <| Just <| Standard Standard3 Bonus
+            , Cell ( 0, 3 ) Base2 <| Just <| Counter Counter1 4 Bonus
+            , Cell ( 1, 0 ) Base2 <| Just <| Counter Counter2 4 Bonus
+            , Cell ( 1, 1 ) Base1 <| Just <| Counter Counter3 4 Bonus
+            , Cell ( 1, 2 ) Base1 <| Just <| Counted Counted1 Bonus
+            , Cell ( 1, 3 ) Base3 <| Just <| Counted Counted2 Bonus
+            , Cell ( 2, 0 ) Base3 <| Just <| Counted Counted3 Bonus
+            , Cell ( 2, 1 ) Base2 <| Just <| Disappearing 4 Bonus
+            , Cell ( 2, 2 ) Base3 <| Just <| Standard Standard1 NoBonus
+            , Cell ( 2, 3 ) Base1 <| Just <| Counter Counter1 4 NoBonus
+            , Cell ( 3, 0 ) Base1 <| Just <| Counted Counted2 NoBonus
+            , Cell ( 3, 1 ) Base3 <| Just <| Disappearing 4 NoBonus
             , Cell ( 3, 2 ) Base3 <| Nothing
             , Cell ( 3, 3 ) Base2 <| Nothing
             ]
@@ -110,7 +109,9 @@ init _ =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        NoOp ->
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -157,12 +158,11 @@ roundedCorners : Board -> Cell -> Ui.Attribute Msg
 roundedCorners board cell =
     let
         round match =
-            case match of
-                True ->
-                    0
+            if match == True then
+                0
 
-                False ->
-                    15
+            else
+                15
     in
     Border.roundEach
         { topRight = cornerBaseMatch board cell [ Above, Right ] |> round
