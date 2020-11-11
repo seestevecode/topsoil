@@ -23,6 +23,7 @@ main =
 
 type alias Model =
     { initialInt : Int
+    , currentSeed : Random.Seed
     , board : Board
     }
 
@@ -87,8 +88,13 @@ type Msg
 
 init : Int -> ( Model, Cmd Msg )
 init intFromDate =
+    let
+        ( board, seed ) =
+            initBoard intFromDate
+    in
     ( { initialInt = intFromDate
-      , board = initBoard intFromDate
+      , currentSeed = seed
+      , board = board
       }
     , Cmd.none
     )
@@ -99,7 +105,7 @@ coords =
     ListX.lift2 Tuple.pair (List.range 0 3) (List.range 0 3)
 
 
-initBoard : Int -> Board
+initBoard : Int -> ( Board, Random.Seed )
 initBoard initInt =
     let
         initSeed =
@@ -118,7 +124,7 @@ initBoard initInt =
         initCoordToken =
             List.map2 Tuple.pair initCoords initTokens
     in
-    List.map
+    ( List.map
         (\( baseCoord, base ) ->
             { coord = baseCoord
             , base = base
@@ -130,6 +136,8 @@ initBoard initInt =
             }
         )
         initBases
+    , nextSeed
+    )
 
 
 baseFromCoord : Int -> ( Int, Int ) -> Base
