@@ -189,15 +189,20 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Ui.layout [ Ui.padding 15 ] <|
-        let
-            viewRow y =
-                getRow y model.board
-                    |> List.map (viewCell model.board)
-                    |> Ui.row [ Ui.spacing 0 ]
-        in
-        List.range 0 3
-            |> List.map viewRow
-            |> Ui.column [ Ui.spacing 0 ]
+        Ui.column [ Ui.spacing 15 ] [ viewBoard model, viewDebug model ]
+
+
+viewBoard : Model -> Ui.Element Msg
+viewBoard model =
+    let
+        viewRow y =
+            getRow y model.board
+                |> List.map (viewCell model.board)
+                |> Ui.row [ Ui.spacing 0 ]
+    in
+    List.range 0 3
+        |> List.map viewRow
+        |> Ui.column [ Ui.spacing 0 ]
 
 
 getRow : Int -> Board -> List Cell
@@ -386,6 +391,14 @@ viewBonus bonus =
 
         NoBonus ->
             ""
+
+
+viewDebug : Model -> Ui.Element Msg
+viewDebug model =
+    Ui.column []
+        [ "Initial Int: " ++ Debug.toString model.initialInt |> Ui.text
+        , "Current Seed: " ++ Debug.toString model.currentSeed |> Ui.text
+        ]
 
 
 subscriptions : Model -> Sub Msg
