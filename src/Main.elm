@@ -5,9 +5,13 @@ import Element as Ui
 import Element.Background as Background
 import Element.Border as Border
 import Html exposing (Html)
+import List.Extra as ListX
+import Random
+import Random.List
+import Simplex
 
 
-main : Program () Model Msg
+main : Program Int Model Msg
 main =
     Browser.element
         { init = init
@@ -81,30 +85,90 @@ type Msg
     = NoOp
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( { initialInt = 12345
-      , board =
-            [ Cell ( 0, 0 ) Base3 <| Just <| Standard Standard1 Bonus
-            , Cell ( 0, 1 ) Base2 <| Just <| Standard Standard2 Bonus
-            , Cell ( 0, 2 ) Base1 <| Just <| Standard Standard3 Bonus
-            , Cell ( 0, 3 ) Base2 <| Just <| Counter Counter1 4 Bonus
-            , Cell ( 1, 0 ) Base2 <| Just <| Counter Counter2 4 Bonus
-            , Cell ( 1, 1 ) Base1 <| Just <| Counter Counter3 4 Bonus
-            , Cell ( 1, 2 ) Base1 <| Just <| Counted Counted1 Bonus
-            , Cell ( 1, 3 ) Base3 <| Just <| Counted Counted2 Bonus
-            , Cell ( 2, 0 ) Base3 <| Just <| Counted Counted3 Bonus
-            , Cell ( 2, 1 ) Base2 <| Just <| Disappearing 4 Bonus
-            , Cell ( 2, 2 ) Base3 <| Just <| Standard Standard1 NoBonus
-            , Cell ( 2, 3 ) Base1 <| Just <| Counter Counter1 4 NoBonus
-            , Cell ( 3, 0 ) Base1 <| Just <| Counted Counted2 NoBonus
-            , Cell ( 3, 1 ) Base3 <| Just <| Disappearing 4 NoBonus
-            , Cell ( 3, 2 ) Base3 <| Nothing
-            , Cell ( 3, 3 ) Base2 <| Nothing
-            ]
+init : Int -> ( Model, Cmd Msg )
+init intFromDate =
+    ( { initialInt = intFromDate
+      , board = initBoard intFromDate
       }
     , Cmd.none
     )
+
+
+coords : List ( Int, Int )
+coords =
+    ListX.lift2 Tuple.pair (List.range 0 3) (List.range 0 3)
+
+
+initBoard : Int -> Board
+initBoard initInt =
+    let
+        initSeed =
+            Random.initialSeed initInt
+
+        initBases =
+            List.map2 Tuple.pair coords <|
+                List.map (baseFromCoord initInt) coords
+
+        ( initCoords, coordSeed ) =
+            Random.step initBoardCoordListGenerator initSeed
+
+        ( initTokens, nextSeed ) =
+            Random.step initBoardTokenListGenerator coordSeed
+
+        initCoordToken =
+            List.map2 Tuple.pair initCoords initTokens
+    in
+    List.map
+        (\( baseCoord, base ) ->
+            { coord = baseCoord
+            , base = base
+            , content =
+                ListX.find
+                    (\( tokenCoord, _ ) -> baseCoord == tokenCoord)
+                    initCoordToken
+                    |> Maybe.map Tuple.second
+            }
+        )
+        initBases
+
+
+baseFromCoord : Int -> ( Int, Int ) -> Base
+baseFromCoord initInt ( x, y ) =
+    Simplex.noise2d
+        (Simplex.permutationTableFromInt initInt)
+        (toFloat x)
+        (toFloat y)
+        |> (\float ->
+                if float < -(1 / 3) then
+                    Base1
+
+                else if float < 1 / 3 then
+                    Base2
+
+                else
+                    Base3
+           )
+
+
+initBoardCoordListGenerator : Random.Generator (List ( Int, Int ))
+initBoardCoordListGenerator =
+    Random.map (List.take 6) <| Random.List.shuffle coords
+
+
+initBoardTokenListGenerator : Random.Generator (List Token)
+initBoardTokenListGenerator =
+    Random.list 6 <|
+        Random.map2 Standard standardGenerator bonusGenerator
+
+
+standardGenerator : Random.Generator SType
+standardGenerator =
+    Random.uniform Standard1 [ Standard2, Standard3 ]
+
+
+bonusGenerator : Random.Generator Bonus
+bonusGenerator =
+    Random.uniform Bonus [ NoBonus ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
