@@ -50,11 +50,17 @@ type Base
     | Base3
 
 
-type Content
-    = Standard StandardToken Bonus
-    | Growing GrowingToken Int Bonus
-    | Grown GrownToken Bonus
-    | DisappearingToken Int Bonus
+type alias Content =
+    { token : Token
+    , bonus : Bonus
+    }
+
+
+type Token
+    = Standard StandardToken
+    | Growing GrowingToken Int
+    | Grown GrownToken
+    | DisappearingToken Int
     | Harvester
 
 
@@ -100,11 +106,14 @@ init intFromDate =
 
         ( queue, nextSeed ) =
             Random.step queueGenerator boardSeed
+
+        harvester =
+            { token = Harvester, bonus = NoBonus }
     in
     ( { initialInt = intFromDate
       , currentSeed = nextSeed
       , board = board
-      , queue = queue ++ List.singleton Harvester
+      , queue = queue ++ List.singleton harvester
       }
     , Cmd.none
     )
@@ -175,7 +184,8 @@ baseFromCoord initInt ( x, y ) =
 
 queueGenerator : Random.Generator (List Content)
 queueGenerator =
-    Random.list 3 <| Random.map2 Standard standardGenerator bonusGenerator
+    Random.list 3 <|
+        Random.map2 contentFromStandardToken standardGenerator bonusGenerator
 
 
 initBoardCoordListGenerator : Random.Generator (List Coord)
@@ -185,7 +195,13 @@ initBoardCoordListGenerator =
 
 initBoardTokenListGenerator : Random.Generator (List Content)
 initBoardTokenListGenerator =
-    Random.list 6 <| Random.map2 Standard standardGenerator bonusGenerator
+    Random.list 6 <|
+        Random.map2 contentFromStandardToken standardGenerator bonusGenerator
+
+
+contentFromStandardToken : StandardToken -> Bonus -> Content
+contentFromStandardToken token bonus =
+    { token = Standard token, bonus = bonus }
 
 
 standardGenerator : Random.Generator StandardToken
@@ -364,18 +380,18 @@ nextBase base =
 
 
 viewContent : Content -> Ui.Element Msg
-viewContent content =
-    case content of
-        Standard standardToken bonus ->
+viewContent { token, bonus } =
+    case token of
+        Standard standardToken ->
             viewStandard standardToken ++ viewBonus bonus |> Ui.text
 
-        Growing growingType count bonus ->
+        Growing growingType count ->
             viewGrowing growingType count ++ viewBonus bonus |> Ui.text
 
-        Grown grownType bonus ->
+        Grown grownType ->
             viewGrown grownType ++ viewBonus bonus |> Ui.text
 
-        DisappearingToken count bonus ->
+        DisappearingToken count ->
             viewDisappearing count ++ viewBonus bonus |> Ui.text
 
         Harvester ->
