@@ -90,12 +90,16 @@ type Msg
 init : Int -> ( Model, Cmd Msg )
 init intFromDate =
     let
-        ( board, seed ) =
+        ( board, boardSeed ) =
             initBoard intFromDate
+
+        ( queue, nextSeed ) =
+            Random.step queueGenerator boardSeed
     in
     ( { initialInt = intFromDate
-      , currentSeed = seed
+      , currentSeed = nextSeed
       , board = board
+      , queue = queue
       }
     , Cmd.none
     )
@@ -157,6 +161,11 @@ baseFromCoord initInt ( x, y ) =
                 else
                     Base3
            )
+
+
+queueGenerator : Random.Generator (List Token)
+queueGenerator =
+    Random.list 3 <| Random.map2 Standard standardGenerator bonusGenerator
 
 
 initBoardCoordListGenerator : Random.Generator (List ( Int, Int ))
