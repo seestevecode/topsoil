@@ -336,20 +336,23 @@ viewContent cell =
         Just (Standard standardType bonus) ->
             viewStandard standardType ++ viewBonus bonus |> Ui.text
 
-        Just (Counter crType count bonus) ->
-            viewCounter crType count ++ viewBonus bonus |> Ui.text
+        Just (Growing growingType count bonus) ->
+            viewGrowing growingType count ++ viewBonus bonus |> Ui.text
 
-        Just (Counted cdType bonus) ->
-            viewCounted cdType ++ viewBonus bonus |> Ui.text
+        Just (Grown grownType bonus) ->
+            viewGrown grownType ++ viewBonus bonus |> Ui.text
 
-        Just (Disappearing count bonus) ->
+        Just (DisappearingToken count bonus) ->
             viewDisappearing count ++ viewBonus bonus |> Ui.text
 
+        Just Harvester ->
+            Ui.none
+
         Nothing ->
-            "_" |> Ui.text
+            Ui.none
 
 
-viewStandard : SType -> String
+viewStandard : StandardToken -> String
 viewStandard standard =
     case standard of
         Standard1 ->
@@ -362,34 +365,34 @@ viewStandard standard =
             "S3"
 
 
-viewCounter : CrType -> Int -> String
-viewCounter counter count =
+viewGrowing : GrowingToken -> Int -> String
+viewGrowing growing count =
     let
         countString =
             "." ++ String.fromInt count
     in
-    case counter of
-        Counter1 ->
-            "Cr1" ++ countString
+    case growing of
+        Growing1 ->
+            "g1" ++ countString
 
-        Counter2 ->
-            "Cr2" ++ countString
+        Growing2 ->
+            "g2" ++ countString
 
-        Counter3 ->
-            "Cr3" ++ countString
+        Growing3 ->
+            "g3" ++ countString
 
 
-viewCounted : CdType -> String
-viewCounted counted =
-    case counted of
-        Counted1 ->
-            "Cd1"
+viewGrown : GrownToken -> String
+viewGrown grown =
+    case grown of
+        Grown1 ->
+            "G1"
 
-        Counted2 ->
-            "Cd2"
+        Grown2 ->
+            "G2"
 
-        Counted3 ->
-            "Cd3"
+        Grown3 ->
+            "G3"
 
 
 viewDisappearing : Int -> String
