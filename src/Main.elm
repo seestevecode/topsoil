@@ -208,15 +208,15 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Ui.layout [ Ui.padding 15 ] <|
-        Ui.column [ Ui.spacing 15 ] [ viewBoard model, viewDebug model ]
+        Ui.column [ Ui.spacing 15 ] [ viewBoard model.board, viewDebug model ]
 
 
-viewBoard : Model -> Ui.Element Msg
-viewBoard model =
+viewBoard : Board -> Ui.Element Msg
+viewBoard board =
     let
         viewRow y =
-            getRow y model.board
-                |> List.map (viewCell model.board)
+            getRow y board
+                |> List.map (viewCell board)
                 |> Ui.row [ Ui.spacing 0 ]
     in
     axis |> List.map viewRow |> Ui.column [ Ui.spacing 0 ]
@@ -245,7 +245,12 @@ viewCell board cell =
         ]
     <|
         Ui.el [ Ui.centerX, Ui.centerY ] <|
-            viewContent cell
+            case cell.content of
+                Just c ->
+                    viewContent c
+
+                Nothing ->
+                    Ui.none
 
 
 roundedCorners : Board -> Cell -> Ui.Attribute Msg
@@ -332,26 +337,23 @@ nextBase base =
             Base1
 
 
-viewContent : Cell -> Ui.Element Msg
-viewContent cell =
-    case cell.content of
-        Just (Standard standardType bonus) ->
-            viewStandard standardType ++ viewBonus bonus |> Ui.text
+viewContent : Content -> Ui.Element Msg
+viewContent content =
+    case content of
+        Standard standardToken bonus ->
+            viewStandard standardToken ++ viewBonus bonus |> Ui.text
 
-        Just (Growing growingType count bonus) ->
+        Growing growingType count bonus ->
             viewGrowing growingType count ++ viewBonus bonus |> Ui.text
 
-        Just (Grown grownType bonus) ->
+        Grown grownType bonus ->
             viewGrown grownType ++ viewBonus bonus |> Ui.text
 
-        Just (DisappearingToken count bonus) ->
+        DisappearingToken count bonus ->
             viewDisappearing count ++ viewBonus bonus |> Ui.text
 
-        Just Harvester ->
-            Ui.none
-
-        Nothing ->
-            Ui.none
+        Harvester ->
+            "H" |> Ui.text
 
 
 viewStandard : StandardToken -> String
