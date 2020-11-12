@@ -25,6 +25,7 @@ type alias Model =
     { initialInt : Int
     , currentSeed : Random.Seed
     , board : Board
+    , queue : List Token
     }
 
 
@@ -398,6 +399,7 @@ viewDebug model =
     Ui.column []
         [ "Initial Int: " ++ Debug.toString model.initialInt |> Ui.text
         , "Current Seed: " ++ Debug.toString model.currentSeed |> Ui.text
+        , "Queue: " ++ Debug.toString model.queue |> Ui.text
         ]
 
 
