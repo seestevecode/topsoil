@@ -25,7 +25,7 @@ type alias Model =
     { initialInt : Int
     , currentSeed : Random.Seed
     , board : Board
-    , queue : List Token
+    , queue : List Content
     }
 
 
@@ -34,10 +34,14 @@ type alias Board =
 
 
 type alias Cell =
-    { coord : ( Int, Int )
+    { coord : Coord
     , base : Base
-    , content : Maybe Token
+    , content : Maybe Content
     }
+
+
+type alias Coord =
+    ( Int, Int )
 
 
 type Base
@@ -46,29 +50,30 @@ type Base
     | Base3
 
 
-type Token
-    = Standard SType Bonus
-    | Counter CrType Int Bonus
-    | Counted CdType Bonus
-    | Disappearing Int Bonus
+type Content
+    = Standard StandardToken Bonus
+    | Growing GrowingToken Int Bonus
+    | Grown GrownToken Bonus
+    | DisappearingToken Int Bonus
+    | Harvester
 
 
-type SType
+type StandardToken
     = Standard1
     | Standard2
     | Standard3
 
 
-type CrType
-    = Counter1
-    | Counter2
-    | Counter3
+type GrowingToken
+    = Growing1
+    | Growing2
+    | Growing3
 
 
-type CdType
-    = Counted1
-    | Counted2
-    | Counted3
+type GrownToken
+    = Grown1
+    | Grown2
+    | Grown3
 
 
 type Bonus
@@ -163,23 +168,22 @@ baseFromCoord initInt ( x, y ) =
            )
 
 
-queueGenerator : Random.Generator (List Token)
+queueGenerator : Random.Generator (List Content)
 queueGenerator =
     Random.list 3 <| Random.map2 Standard standardGenerator bonusGenerator
 
 
-initBoardCoordListGenerator : Random.Generator (List ( Int, Int ))
+initBoardCoordListGenerator : Random.Generator (List Coord)
 initBoardCoordListGenerator =
     Random.map (List.take 6) <| Random.List.shuffle coords
 
 
-initBoardTokenListGenerator : Random.Generator (List Token)
+initBoardTokenListGenerator : Random.Generator (List Content)
 initBoardTokenListGenerator =
-    Random.list 6 <|
-        Random.map2 Standard standardGenerator bonusGenerator
+    Random.list 6 <| Random.map2 Standard standardGenerator bonusGenerator
 
 
-standardGenerator : Random.Generator SType
+standardGenerator : Random.Generator StandardToken
 standardGenerator =
     Random.uniform Standard1 [ Standard2, Standard3 ]
 
@@ -270,12 +274,12 @@ cornerBaseMatch board cell directions =
     List.member cell.base neighbourBases
 
 
-neighbourBase : Board -> ( Int, Int ) -> Direction -> Maybe Base
+neighbourBase : Board -> Coord -> Direction -> Maybe Base
 neighbourBase board coord direction =
     Maybe.map .base <| neighbour board coord direction
 
 
-neighbour : Board -> ( Int, Int ) -> Direction -> Maybe Cell
+neighbour : Board -> Coord -> Direction -> Maybe Cell
 neighbour board ( x, y ) direction =
     let
         neighbourCoord =
@@ -295,7 +299,7 @@ neighbour board ( x, y ) direction =
     getCell board neighbourCoord
 
 
-getCell : Board -> ( Int, Int ) -> Maybe Cell
+getCell : Board -> Coord -> Maybe Cell
 getCell board coord =
     List.filter (\cell -> cell.coord == coord) board |> List.head
 
@@ -329,8 +333,8 @@ nextBase base =
 viewContent : Cell -> Ui.Element Msg
 viewContent cell =
     case cell.content of
-        Just (Standard sType bonus) ->
-            viewStandard sType ++ viewBonus bonus |> Ui.text
+        Just (Standard standardType bonus) ->
+            viewStandard standardType ++ viewBonus bonus |> Ui.text
 
         Just (Counter crType count bonus) ->
             viewCounter crType count ++ viewBonus bonus |> Ui.text
