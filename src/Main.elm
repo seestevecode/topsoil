@@ -110,11 +110,6 @@ init intFromDate =
     )
 
 
-coords : List ( Int, Int )
-coords =
-    ListX.lift2 Tuple.pair (List.range 0 3) (List.range 0 3)
-
-
 initBoard : Int -> ( Board, Random.Seed )
 initBoard initInt =
     let
@@ -150,7 +145,17 @@ initBoard initInt =
     )
 
 
-baseFromCoord : Int -> ( Int, Int ) -> Base
+coords : List Coord
+coords =
+    ListX.lift2 Tuple.pair axis axis
+
+
+axis : List Int
+axis =
+    List.range 0 3
+
+
+baseFromCoord : Int -> Coord -> Base
 baseFromCoord initInt ( x, y ) =
     Simplex.noise2d
         (Simplex.permutationTableFromInt initInt)
@@ -214,9 +219,7 @@ viewBoard model =
                 |> List.map (viewCell model.board)
                 |> Ui.row [ Ui.spacing 0 ]
     in
-    List.range 0 3
-        |> List.map viewRow
-        |> Ui.column [ Ui.spacing 0 ]
+    axis |> List.map viewRow |> Ui.column [ Ui.spacing 0 ]
 
 
 getRow : Int -> Board -> List Cell
@@ -266,7 +269,6 @@ roundedCorners board cell =
 cornerBaseMatch : Board -> Cell -> List Direction -> Bool
 cornerBaseMatch board cell directions =
     let
-        neighbourBases : List Base
         neighbourBases =
             List.map (neighbourBase board cell.coord) directions
                 |> List.filterMap identity
