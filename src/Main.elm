@@ -104,7 +104,7 @@ init intFromDate =
     ( { initialInt = intFromDate
       , currentSeed = nextSeed
       , board = board
-      , queue = queue
+      , queue = queue ++ List.singleton Harvester
       }
     , Cmd.none
     )
@@ -208,7 +208,33 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Ui.layout [ Ui.padding 15 ] <|
-        Ui.column [ Ui.spacing 15 ] [ viewBoard model.board, viewDebug model ]
+        Ui.column [ Ui.spacing 15 ]
+            [ viewQueue model.queue
+            , viewBoard model.board
+            , viewDebug model
+            ]
+
+
+viewQueue : List Content -> Ui.Element Msg
+viewQueue queue =
+    queue
+        |> List.map viewQueueCell
+        |> Ui.row
+            [ Ui.spacing 0
+            , Background.color <| Ui.rgb255 200 200 200
+            , Border.rounded 15
+            ]
+
+
+viewQueueCell : Content -> Ui.Element Msg
+viewQueueCell content =
+    Ui.el
+        [ Ui.width <| Ui.px 100
+        , Ui.height <| Ui.px 100
+        ]
+    <|
+        Ui.el [ Ui.centerX, Ui.centerY ] <|
+            viewContent content
 
 
 viewBoard : Board -> Ui.Element Msg
@@ -419,7 +445,7 @@ viewDebug model =
     Ui.column []
         [ "Initial Int: " ++ Debug.toString model.initialInt |> Ui.text
         , "Current Seed: " ++ Debug.toString model.currentSeed |> Ui.text
-        , "Queue: " ++ Debug.toString model.queue |> Ui.text
+        , "Next in queue: " ++ Debug.toString (List.head model.queue) |> Ui.text
         ]
 
 
