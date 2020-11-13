@@ -4,6 +4,7 @@ import Browser
 import Element as Ui
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Html exposing (Html)
 import List.Extra as ListX
 import Random
@@ -26,6 +27,7 @@ type alias Model =
     , currentSeed : Random.Seed
     , board : Board
     , queue : List Content
+    , debug : String
     }
 
 
@@ -96,6 +98,8 @@ type Direction
 
 type Msg
     = NoOp
+    | PlaceTokenOnBoard Coord
+    | Harvest Coord
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -114,6 +118,7 @@ init intFromDate =
       , currentSeed = nextSeed
       , board = board
       , queue = queue ++ List.singleton harvester
+      , debug = ""
       }
     , Cmd.none
     )
@@ -220,13 +225,49 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
+        PlaceTokenOnBoard coord ->
+            ( { model
+                | board =
+                    placeTokenOnBoard model.board
+                        (List.head model.queue
+                            |> Maybe.withDefault
+                                { token = Harvester
+                                , bonus = NoBonus
+                                }
+                        )
+                        coord
+                , queue = List.tail model.queue |> Maybe.withDefault []
+                , debug = "Placing content..."
+              }
+            , Cmd.none
+            )
+
+        Harvest coord ->
+            ( { model | debug = "Harvesting..." }, Cmd.none )
+
+
+placeTokenOnBoard : Board -> Content -> Coord -> Board
+placeTokenOnBoard oldBoard newContent targetCoord =
+    List.map
+        (\cell ->
+            if cell.coord == targetCoord then
+                { coord = cell.coord
+                , base = cell.base
+                , content = Just newContent
+                }
+
+            else
+                cell
+        )
+        oldBoard
+
 
 view : Model -> Html Msg
 view model =
     Ui.layout [ Ui.padding 15 ] <|
         Ui.column [ Ui.spacing 15 ]
             [ viewQueue model.queue
-            , viewBoard model.board
+            , viewBoard model
             , viewDebug model
             ]
 
@@ -237,6 +278,8 @@ viewQueue queue =
         |> List.map viewQueueCell
         |> Ui.row
             [ Ui.spacing 0
+            , Ui.width <| Ui.px 400
+            , Ui.height <| Ui.px 100
             , Background.color <| Ui.rgb255 200 200 200
             , Border.rounded 15
             ]
@@ -253,12 +296,12 @@ viewQueueCell content =
             viewContent content
 
 
-viewBoard : Board -> Ui.Element Msg
-viewBoard board =
+viewBoard : Model -> Ui.Element Msg
+viewBoard model =
     let
         viewRow y =
-            getRow y board
-                |> List.map (viewCell board)
+            getRow y model.board
+                |> List.map (viewCell model)
                 |> Ui.row [ Ui.spacing 0 ]
     in
     axis |> List.map viewRow |> Ui.column [ Ui.spacing 0 ]
@@ -269,17 +312,34 @@ getRow row board =
     List.filter (\cell -> Tuple.first cell.coord == row) board
 
 
-viewCell : Board -> Cell -> Ui.Element Msg
-viewCell board cell =
+viewCell : Model -> Cell -> Ui.Element Msg
+viewCell model cell =
     Ui.el
         [ Background.color <| baseColour cell.base
         , Ui.width <| Ui.px 100
         , Ui.height <| Ui.px 100
         , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
-        , roundedCorners board cell
+        , roundedCorners model.board cell
+        , Events.onClick <|
+            if List.length model.queue > 1 && cell.content == Nothing then
+                PlaceTokenOnBoard cell.coord
+
+            else if
+                model.queue
+                    == [ { token = Harvester, bonus = NoBonus } ]
+                    && cell.content
+                    /= Nothing
+            then
+                Harvest cell.coord
+
+            else
+                NoOp
         , Border.color <|
             baseColour <|
-                if neighbourBase board cell.coord Below == Just cell.base then
+                if
+                    neighbourBase model.board cell.coord Below
+                        == Just cell.base
+                then
                     cell.base
 
                 else
@@ -461,7 +521,9 @@ viewDebug model =
     Ui.column []
         [ "Initial Int: " ++ Debug.toString model.initialInt |> Ui.text
         , "Current Seed: " ++ Debug.toString model.currentSeed |> Ui.text
+        , "Queue: " ++ Debug.toString model.queue |> Ui.text
         , "Next in queue: " ++ Debug.toString (List.head model.queue) |> Ui.text
+        , "Debug: " ++ Debug.toString model.debug |> Ui.text
         ]
 
 
