@@ -59,29 +59,17 @@ type alias Content =
 
 
 type Token
-    = Standard StandardToken
-    | Growing GrowingToken Int
-    | Grown GrownToken
-    | DisappearingToken Int
-    | Harvester
-
-
-type StandardToken
     = Standard1
     | Standard2
     | Standard3
-
-
-type GrowingToken
-    = Growing1
-    | Growing2
-    | Growing3
-
-
-type GrownToken
-    = Grown1
+    | Growing1 Int
+    | Growing2 Int
+    | Growing3 Int
+    | Grown1
     | Grown2
     | Grown3
+    | Disappearing Int
+    | Harvester
 
 
 type Bonus
@@ -190,7 +178,7 @@ baseFromCoord initInt ( x, y ) =
 queueGenerator : Random.Generator (List Content)
 queueGenerator =
     Random.list 3 <|
-        Random.map2 contentFromStandardToken standardGenerator bonusGenerator
+        Random.map2 contentFromToken standardGenerator bonusGenerator
 
 
 initBoardCoordListGenerator : Random.Generator (List Coord)
@@ -201,15 +189,15 @@ initBoardCoordListGenerator =
 initBoardTokenListGenerator : Random.Generator (List Content)
 initBoardTokenListGenerator =
     Random.list 6 <|
-        Random.map2 contentFromStandardToken standardGenerator bonusGenerator
+        Random.map2 contentFromToken standardGenerator bonusGenerator
 
 
-contentFromStandardToken : StandardToken -> Bonus -> Content
-contentFromStandardToken token bonus =
-    { token = Standard token, bonus = bonus }
+contentFromToken : Token -> Bonus -> Content
+contentFromToken token bonus =
+    { token = token, bonus = bonus }
 
 
-standardGenerator : Random.Generator StandardToken
+standardGenerator : Random.Generator Token
 standardGenerator =
     Random.uniform Standard1 [ Standard2, Standard3 ]
 
@@ -441,26 +429,12 @@ nextBase base =
 
 viewContent : Content -> Ui.Element Msg
 viewContent { token, bonus } =
+    viewToken token ++ viewBonus bonus |> Ui.text
+
+
+viewToken : Token -> String
+viewToken token =
     case token of
-        Standard standardToken ->
-            viewStandard standardToken ++ viewBonus bonus |> Ui.text
-
-        Growing growingType count ->
-            viewGrowing growingType count ++ viewBonus bonus |> Ui.text
-
-        Grown grownType ->
-            viewGrown grownType ++ viewBonus bonus |> Ui.text
-
-        DisappearingToken count ->
-            viewDisappearing count ++ viewBonus bonus |> Ui.text
-
-        Harvester ->
-            "H" |> Ui.text
-
-
-viewStandard : StandardToken -> String
-viewStandard standard =
-    case standard of
         Standard1 ->
             "S1"
 
@@ -470,27 +444,15 @@ viewStandard standard =
         Standard3 ->
             "S3"
 
+        Growing1 counter ->
+            "g1." ++ String.fromInt counter
 
-viewGrowing : GrowingToken -> Int -> String
-viewGrowing growing count =
-    let
-        countString =
-            "." ++ String.fromInt count
-    in
-    case growing of
-        Growing1 ->
-            "g1" ++ countString
+        Growing2 counter ->
+            "g2." ++ String.fromInt counter
 
-        Growing2 ->
-            "g2" ++ countString
+        Growing3 counter ->
+            "g3." ++ String.fromInt counter
 
-        Growing3 ->
-            "g3" ++ countString
-
-
-viewGrown : GrownToken -> String
-viewGrown grown =
-    case grown of
         Grown1 ->
             "G1"
 
@@ -500,10 +462,11 @@ viewGrown grown =
         Grown3 ->
             "G3"
 
+        Disappearing counter ->
+            "D." ++ String.fromInt counter
 
-viewDisappearing : Int -> String
-viewDisappearing count =
-    "D." ++ String.fromInt count
+        Harvester ->
+            "H"
 
 
 viewBonus : Bonus -> String
