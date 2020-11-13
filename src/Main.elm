@@ -159,10 +159,14 @@ axis =
 
 baseFromCoord : Int -> Coord -> Base
 baseFromCoord initInt ( x, y ) =
+    let
+        scale =
+            0.125
+    in
     Simplex.noise2d
         (Simplex.permutationTableFromInt initInt)
-        (toFloat x)
-        (toFloat y)
+        (toFloat x * scale)
+        (toFloat y * scale)
         |> (\float ->
                 if float < -(1 / 3) then
                     Base1
