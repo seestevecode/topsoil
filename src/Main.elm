@@ -487,11 +487,21 @@ viewDebug : Model -> Ui.Element Msg
 viewDebug model =
     Ui.column []
         [ "Initial Int: " ++ Debug.toString model.initialInt |> Ui.text
+        , "Game Id: " ++ Debug.toString (idFromInt model.initialInt) |> Ui.text
         , "Current Seed: " ++ Debug.toString model.currentSeed |> Ui.text
         , "Queue: " ++ Debug.toString model.queue |> Ui.text
         , "Next in queue: " ++ Debug.toString (List.head model.queue) |> Ui.text
         , "Debug: " ++ Debug.toString model.debug |> Ui.text
         ]
+
+
+idFromInt : Int -> String
+idFromInt int =
+    let
+        s =
+            String.fromInt int
+    in
+    String.join "-" [ String.left 4 s, String.slice 4 9 s, String.right 4 s ]
 
 
 subscriptions : Model -> Sub Msg
