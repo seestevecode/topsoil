@@ -268,20 +268,28 @@ view model =
 
 viewQueue : List Content -> Ui.Element Msg
 viewQueue queue =
-    queue
-        |> List.map viewQueueCell
-        |> Ui.row [ Ui.spacing 0 ]
+    (queue
+        |> List.head
+        |> Maybe.withDefault { token = Harvester, bonus = NoBonus }
+        |> viewQueueCell
+        |> Ui.el
+            [ Background.color <| Ui.rgb255 235 219 178
+            , Ui.height <| Ui.px 100
+            , Border.rounded 15
+            ]
+    )
+        :: (queue
+                |> List.tail
+                |> Maybe.withDefault []
+                |> List.map viewQueueCell
+           )
+        |> Ui.row [ Ui.height <| Ui.px 100 ]
 
 
 viewQueueCell : Content -> Ui.Element Msg
 viewQueueCell content =
-    Ui.el
-        [ Ui.width <| Ui.px 100
-        , Ui.height <| Ui.px 100
-        ]
-    <|
-        Ui.el [ Ui.centerX, Ui.centerY ] <|
-            viewContent content
+    Ui.el [ Ui.width <| Ui.px 100, Ui.centerY ] <|
+        viewContent content
 
 
 viewBoard : Model -> Ui.Element Msg
@@ -445,6 +453,7 @@ viewContent { token, bonus } =
         sharedAttributes =
             [ Ui.width <| Ui.px 55
             , Ui.height <| Ui.px 55
+            , Ui.centerX
             , Ui.inFront bonusElement
             ]
     in
