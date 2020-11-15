@@ -161,7 +161,7 @@ baseFromCoord : Int -> Coord -> Base
 baseFromCoord initInt ( x, y ) =
     let
         scale =
-            0.125
+            0.15
     in
     Simplex.noise2d
         (Simplex.permutationTableFromInt initInt)
