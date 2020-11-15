@@ -201,7 +201,7 @@ standardGenerator =
 
 bonusGenerator : Random.Generator Bonus
 bonusGenerator =
-    Random.uniform Bonus [ NoBonus ]
+    Random.weighted ( 20, Bonus ) [ ( 80, NoBonus ) ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
