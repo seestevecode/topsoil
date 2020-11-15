@@ -459,6 +459,10 @@ viewContent { token, bonus } =
 
         Standard3 ->
             Ui.image sharedAttributes
+                { src = "images/sunflower.png", description = "Sunflower" }
+
+        Disappearing _ ->
+            Ui.image sharedAttributes
                 { src = "images/dandelion-flower.png", description = "Dandelion" }
 
         Harvester ->
