@@ -490,11 +490,12 @@ viewDebug model =
 
 idFromInt : Int -> String
 idFromInt int =
-    let
-        s =
-            String.fromInt int
-    in
-    String.join "-" [ String.left 4 s, String.slice 4 9 s, String.right 4 s ]
+    int
+        |> String.fromInt
+        |> String.toList
+        |> ListX.greedyGroupsOf 4
+        |> List.map String.fromList
+        |> String.join "-"
 
 
 subscriptions : Model -> Sub Msg
