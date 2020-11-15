@@ -249,7 +249,11 @@ placeTokenOnBoard oldBoard newContent targetCoord =
 
 view : Model -> Html Msg
 view model =
-    Ui.layout [ Ui.padding 15 ] <|
+    Ui.layout
+        [ Ui.padding 15
+        , Background.color <| Ui.rgb255 168 153 132
+        ]
+    <|
         Ui.column [ Ui.spacing 15 ]
             [ viewQueue model.queue
             , viewBoard model
@@ -265,7 +269,6 @@ viewQueue queue =
             [ Ui.spacing 0
             , Ui.width <| Ui.px 400
             , Ui.height <| Ui.px 100
-            , Background.color <| Ui.rgb255 200 200 200
             , Border.rounded 15
             ]
 
