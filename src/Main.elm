@@ -451,7 +451,7 @@ viewContent { token, bonus } =
     case token of
         Standard1 ->
             Ui.image sharedAttributes
-                { src = "images/grass.png", description = "Grass" }
+                { src = "images/high-grass.png", description = "Grass" }
 
         Standard2 ->
             Ui.image sharedAttributes
