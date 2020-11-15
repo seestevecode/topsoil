@@ -254,10 +254,15 @@ view model =
         , Background.color <| Ui.rgb255 168 153 132
         ]
     <|
-        Ui.column [ Ui.spacing 15 ]
-            [ viewQueue model.queue
-            , viewBoard model
-            , viewDebug model
+        Ui.row [ Ui.spacing 100, Ui.centerX ]
+            [ Ui.column
+                [ Ui.spacing 15
+                , Ui.centerX
+                ]
+                [ viewQueue model.queue
+                , viewBoard model
+                ]
+            , Ui.el [ Ui.width <| Ui.px 600 ] <| viewDebug model
             ]
 
 
@@ -265,12 +270,7 @@ viewQueue : List Content -> Ui.Element Msg
 viewQueue queue =
     queue
         |> List.map viewQueueCell
-        |> Ui.row
-            [ Ui.spacing 0
-            , Ui.width <| Ui.px 400
-            , Ui.height <| Ui.px 100
-            , Border.rounded 15
-            ]
+        |> Ui.row [ Ui.spacing 0 ]
 
 
 viewQueueCell : Content -> Ui.Element Msg
@@ -518,14 +518,19 @@ viewBonus bonus =
 
 viewDebug : Model -> Ui.Element Msg
 viewDebug model =
-    Ui.column []
-        [ "Initial Int: " ++ Debug.toString model.initialInt |> Ui.text
-        , "Game Id: " ++ Debug.toString (idFromInt model.initialInt) |> Ui.text
-        , "Current Seed: " ++ Debug.toString model.currentSeed |> Ui.text
-        , "Queue: " ++ Debug.toString model.queue |> Ui.text
-        , "Next in queue: " ++ Debug.toString (List.head model.queue) |> Ui.text
-        , "Debug: " ++ Debug.toString model.debug |> Ui.text
-        ]
+    let
+        viewDebugElement string =
+            Ui.paragraph [] <| List.singleton <| Ui.text <| string
+    in
+    Ui.column [ Ui.spacing 20 ] <|
+        List.map viewDebugElement
+            [ "Initial Int: " ++ Debug.toString model.initialInt
+            , "Game Id: " ++ Debug.toString (idFromInt model.initialInt)
+            , "Current Seed: " ++ Debug.toString model.currentSeed
+            , "Queue: " ++ Debug.toString model.queue
+            , "Next in queue: " ++ Debug.toString (List.head model.queue)
+            , "Debug: " ++ Debug.toString model.debug
+            ]
 
 
 idFromInt : Int -> String
