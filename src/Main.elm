@@ -426,7 +426,45 @@ nextBase base =
 
 viewContent : Content -> Ui.Element Msg
 viewContent { token, bonus } =
-    viewToken token ++ viewBonus bonus |> Ui.text
+    let
+        bonusElement =
+            if bonus == Bonus then
+                Ui.image
+                    [ Ui.width <| Ui.px 15
+                    , Ui.height <| Ui.px 15
+                    , Ui.moveUp 5
+                    ]
+                    { src = "images/bee.png", description = "Bee" }
+
+            else
+                Ui.none
+
+        sharedAttributes =
+            [ Ui.width <| Ui.px 55
+            , Ui.height <| Ui.px 55
+            , Ui.above bonusElement
+            , Ui.moveDown 10
+            ]
+    in
+    case token of
+        Standard1 ->
+            Ui.image sharedAttributes
+                { src = "images/grass.png", description = "Grass" }
+
+        Standard2 ->
+            Ui.image sharedAttributes
+                { src = "images/daisy.png", description = "Daisy" }
+
+        Standard3 ->
+            Ui.image sharedAttributes
+                { src = "images/dandelion-flower.png", description = "Dandelion" }
+
+        Harvester ->
+            Ui.image sharedAttributes
+                { src = "images/spade.png", description = "Spade" }
+
+        _ ->
+            viewToken token ++ viewBonus bonus |> Ui.text
 
 
 viewToken : Token -> String
