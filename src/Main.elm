@@ -123,10 +123,10 @@ initBoard initInt =
                 List.map (baseFromCoord initInt) coords
 
         ( initCoords, coordSeed ) =
-            Random.step initBoardCoordListGenerator initSeed
+            Random.step initCoordsGenerator initSeed
 
         ( initTokens, nextSeed ) =
-            Random.step initBoardTokenListGenerator coordSeed
+            Random.step initTokensGenerator coordSeed
 
         initCoordToken =
             List.map2 Tuple.pair initCoords initTokens
@@ -181,24 +181,17 @@ baseFromCoord initInt ( x, y ) =
 
 queueGenerator : Random.Generator (List Content)
 queueGenerator =
-    Random.list 3 <|
-        Random.map2 contentFromToken standardGenerator bonusGenerator
+    Random.list 3 <| Random.map2 Content standardGenerator bonusGenerator
 
 
-initBoardCoordListGenerator : Random.Generator (List Coord)
-initBoardCoordListGenerator =
+initCoordsGenerator : Random.Generator (List Coord)
+initCoordsGenerator =
     Random.map (List.take 6) <| Random.List.shuffle coords
 
 
-initBoardTokenListGenerator : Random.Generator (List Content)
-initBoardTokenListGenerator =
-    Random.list 6 <|
-        Random.map2 contentFromToken standardGenerator bonusGenerator
-
-
-contentFromToken : Token -> Bonus -> Content
-contentFromToken token bonus =
-    { token = token, bonus = bonus }
+initTokensGenerator : Random.Generator (List Content)
+initTokensGenerator =
+    Random.list 6 <| Random.map2 Content standardGenerator bonusGenerator
 
 
 standardGenerator : Random.Generator Token
