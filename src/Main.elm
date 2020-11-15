@@ -435,7 +435,7 @@ viewContent { token, bonus } =
                 Ui.image
                     [ Ui.width <| Ui.px 15
                     , Ui.height <| Ui.px 15
-                    , Ui.moveUp 5
+                    , Ui.moveUp 10
                     ]
                     { src = "images/bee.png", description = "Bee" }
 
@@ -445,8 +445,7 @@ viewContent { token, bonus } =
         sharedAttributes =
             [ Ui.width <| Ui.px 55
             , Ui.height <| Ui.px 55
-            , Ui.above bonusElement
-            , Ui.moveDown 10
+            , Ui.inFront bonusElement
             ]
     in
     case token of
