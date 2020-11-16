@@ -5,6 +5,8 @@ import Element as Ui
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Font as Font
+import Element.Input as Input
 import Html exposing (Html)
 import List.Extra as ListX
 import Random
@@ -27,6 +29,11 @@ type alias Model =
     , currentSeed : Random.Seed
     , board : Board
     , queue : List Content
+    , undoOk : Bool
+    , undoState :
+        { undoBoard : Board
+        , undoQueue : List Content
+        }
     , debug : String
     }
 
@@ -88,6 +95,7 @@ type Msg
     = NoOp
     | PlaceTokenOnBoard Coord
     | Harvest Coord
+    | Undo
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -106,6 +114,8 @@ init intFromDate =
       , currentSeed = nextSeed
       , board = board
       , queue = queue ++ List.singleton harvester
+      , undoOk = False
+      , undoState = { undoBoard = [], undoQueue = [] }
       , debug = ""
       }
     , Cmd.none
@@ -222,6 +232,8 @@ update msg model =
                         )
                         coord
                 , queue = List.tail model.queue |> Maybe.withDefault []
+                , undoOk = True
+                , undoState = { undoBoard = model.board, undoQueue = model.queue }
                 , debug = "Placing content..."
               }
             , Cmd.none
@@ -229,6 +241,15 @@ update msg model =
 
         Harvest coord ->
             ( { model | debug = "Harvesting..." }, Cmd.none )
+
+        Undo ->
+            ( { model
+                | board = model.undoState.undoBoard
+                , queue = model.undoState.undoQueue
+                , undoOk = False
+              }
+            , Cmd.none
+            )
 
 
 placeTokenOnBoard : Board -> Content -> Coord -> Board
@@ -254,13 +275,14 @@ view model =
         , Background.color <| Ui.rgb255 235 219 178
         ]
     <|
-        Ui.row [ Ui.spacing 100, Ui.centerX ]
+        Ui.row [ Ui.spacing 100, Ui.centerX, Ui.centerY ]
             [ Ui.column
                 [ Ui.spacing 15
                 , Ui.centerX
                 ]
                 [ viewQueue model.queue
                 , viewBoard model
+                , viewButtons model
                 ]
             , Ui.el [ Ui.width <| Ui.px 600 ] <| viewDebug model
             ]
@@ -527,6 +549,26 @@ viewBonus bonus =
 
         NoBonus ->
             ""
+
+
+viewButtons : Model -> Ui.Element Msg
+viewButtons model =
+    Ui.row [ Ui.height <| Ui.px 50 ] <|
+        List.singleton <|
+            if model.undoOk then
+                Input.button
+                    [ Background.color <| Ui.rgb255 168 153 132
+                    , Ui.height <| Ui.px 50
+                    , Ui.width <| Ui.px 100
+                    , Ui.padding 10
+                    , Border.rounded 5
+                    ]
+                    { onPress = Just Undo
+                    , label = Ui.el [ Ui.centerX, Ui.centerY ] <| Ui.text "Undo"
+                    }
+
+            else
+                Ui.none
 
 
 viewDebug : Model -> Ui.Element Msg
