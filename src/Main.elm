@@ -332,45 +332,86 @@ getRow row board =
 
 viewCell : Model -> Cell -> Ui.Element Msg
 viewCell model cell =
-    Ui.el
-        [ Background.color <| baseColour cell.base
-        , Ui.width <| Ui.px 100
-        , Ui.height <| Ui.px 100
-        , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
-        , roundedCorners model.board cell
-        , Events.onClick <|
-            if List.length model.queue > 1 && cell.content == Nothing then
-                PlaceTokenOnBoard cell.coord
+    Ui.el [ Ui.width <| Ui.px 100, Ui.height <| Ui.px 100 ] <|
+        Ui.el
+            ([ Background.color <| baseColour cell.base
+             , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
+             , roundedCorners model.board cell
+             , Events.onClick <|
+                if List.length model.queue > 1 && cell.content == Nothing then
+                    PlaceTokenOnBoard cell.coord
 
-            else if
-                model.queue
-                    == [ { token = Harvester, bonus = NoBonus } ]
-                    && cell.content
-                    /= Nothing
-            then
-                Harvest cell.coord
-
-            else
-                NoOp
-        , Border.color <|
-            baseColour <|
-                if
-                    neighbourBase model.board cell.coord Below
-                        == Just cell.base
+                else if
+                    model.queue
+                        == [ { token = Harvester, bonus = NoBonus } ]
+                        && cell.content
+                        /= Nothing
                 then
-                    cell.base
+                    Harvest cell.coord
 
                 else
-                    nextBase cell.base
-        ]
-    <|
-        Ui.el [ Ui.centerX, Ui.centerY ] <|
-            case cell.content of
-                Just c ->
-                    viewContent c
+                    NoOp
+             , Border.color <|
+                baseColour <|
+                    if
+                        neighbourBase model.board cell.coord Below
+                            == Just cell.base
+                    then
+                        cell.base
 
-                Nothing ->
-                    Ui.none
+                    else
+                        nextBase cell.base
+             ]
+                ++ cellAlignments model.board cell
+            )
+        <|
+            Ui.el [ Ui.centerX, Ui.centerY ] <|
+                case cell.content of
+                    Just c ->
+                        viewContent c
+
+                    Nothing ->
+                        Ui.none
+
+
+cellAlignments : Board -> Cell -> List (Ui.Attribute Msg)
+cellAlignments board cell =
+    let
+        flushTo direction =
+            neighbourBase board cell.coord direction
+                == Just cell.base
+                || neighbourBase board cell.coord direction
+                == Nothing
+
+        verticalAttrs =
+            case ( flushTo Above, flushTo Below ) of
+                ( True, True ) ->
+                    [ Ui.height <| Ui.px 100 ]
+
+                ( True, False ) ->
+                    [ Ui.height <| Ui.px 98, Ui.alignTop ]
+
+                ( False, True ) ->
+                    [ Ui.height <| Ui.px 98, Ui.alignBottom ]
+
+                ( False, False ) ->
+                    [ Ui.height <| Ui.px 96, Ui.centerY ]
+
+        horizontalAttrs =
+            case ( flushTo Right, flushTo Left ) of
+                ( True, True ) ->
+                    [ Ui.width <| Ui.px 100 ]
+
+                ( True, False ) ->
+                    [ Ui.width <| Ui.px 98, Ui.alignRight ]
+
+                ( False, True ) ->
+                    [ Ui.width <| Ui.px 98, Ui.alignLeft ]
+
+                ( False, False ) ->
+                    [ Ui.width <| Ui.px 96, Ui.centerX ]
+    in
+    verticalAttrs ++ horizontalAttrs
 
 
 roundedCorners : Board -> Cell -> Ui.Attribute Msg
