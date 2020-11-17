@@ -422,7 +422,7 @@ roundedCorners board cell =
                 0
 
             else
-                15
+                8
     in
     Border.roundEach
         { topRight = cornerBaseMatch board cell [ Above, Right ] |> round
