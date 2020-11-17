@@ -272,7 +272,7 @@ view : Model -> Html Msg
 view model =
     Ui.layout
         [ Ui.padding 15
-        , Background.color <| Ui.rgb255 235 219 178
+        , Background.color <| Ui.rgb255 213 196 161
         ]
     <|
         Ui.row [ Ui.spacing 100, Ui.centerX, Ui.centerY ]
@@ -295,7 +295,7 @@ viewQueue queue =
         |> Maybe.withDefault { token = Harvester, bonus = NoBonus }
         |> viewQueueCell
         |> Ui.el
-            [ Background.color <| Ui.rgb255 213 196 161
+            [ Background.color <| Ui.rgb255 235 219 178
             , Ui.height <| Ui.px 100
             , Border.rounded 15
             ]
