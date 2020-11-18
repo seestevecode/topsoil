@@ -280,12 +280,28 @@ view model =
                 [ Ui.spacing 15
                 , Ui.centerX
                 ]
-                [ viewQueue model.queue
+                [ viewGameInfo model
+                , viewQueue model.queue
                 , viewBoard model
                 , viewButtons model
                 ]
             , Ui.el [ Ui.width <| Ui.px 600 ] <| viewDebug model
             ]
+
+
+viewGameInfo : Model -> Ui.Element Msg
+viewGameInfo model =
+    Ui.row [ Ui.spaceEvenly, Ui.height <| Ui.px 50 ]
+        [ Ui.el
+            [ Font.family <| [ Font.typeface "Source Code Pro" ]
+            , Font.size 12
+            , Ui.alignTop
+            ]
+          <|
+            Ui.text <|
+                "Game Id: "
+                    ++ idFromInt model.initialInt
+        ]
 
 
 viewQueue : List Content -> Ui.Element Msg
@@ -595,21 +611,21 @@ viewBonus bonus =
 viewButtons : Model -> Ui.Element Msg
 viewButtons model =
     Ui.row [ Ui.height <| Ui.px 50 ] <|
-        List.singleton <|
-            if model.undoOk then
-                Input.button
-                    [ Background.color <| Ui.rgb255 168 153 132
-                    , Ui.height <| Ui.px 50
-                    , Ui.width <| Ui.px 100
-                    , Ui.padding 10
-                    , Border.rounded 5
-                    ]
-                    { onPress = Just Undo
-                    , label = Ui.el [ Ui.centerX, Ui.centerY ] <| Ui.text "Undo"
-                    }
+        [ if model.undoOk then
+            Input.button
+                [ Background.color <| Ui.rgb255 168 153 132
+                , Ui.height <| Ui.px 50
+                , Ui.width <| Ui.px 100
+                , Ui.padding 10
+                , Border.rounded 5
+                ]
+                { onPress = Just Undo
+                , label = Ui.el [ Ui.centerX, Ui.centerY ] <| Ui.text "Undo"
+                }
 
-            else
-                Ui.none
+          else
+            Ui.none
+        ]
 
 
 viewDebug : Model -> Ui.Element Msg
@@ -620,11 +636,7 @@ viewDebug model =
     in
     Ui.column [ Ui.spacing 20 ] <|
         List.map viewDebugElement
-            [ "Initial Int: " ++ Debug.toString model.initialInt
-            , "Game Id: " ++ Debug.toString (idFromInt model.initialInt)
-            , "Current Seed: " ++ Debug.toString model.currentSeed
-            , "Queue: " ++ Debug.toString model.queue
-            , "Next in queue: " ++ Debug.toString (List.head model.queue)
+            [ "Current Seed: " ++ Debug.toString model.currentSeed
             , "Debug: " ++ Debug.toString model.debug
             ]
 
@@ -633,6 +645,7 @@ idFromInt : Int -> String
 idFromInt int =
     int
         |> String.fromInt
+        |> String.padLeft 12 '0'
         |> String.toList
         |> ListX.greedyGroupsOf 4
         |> List.map String.fromList
