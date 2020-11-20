@@ -30,10 +30,8 @@ type alias Model =
     , board : Board
     , queue : List Content
     , undoOk : Bool
-    , undoState :
-        { undoBoard : Board
-        , undoQueue : List Content
-        }
+    , undoBoard : Board
+    , undoQueue : List Content
     , debug : String
     }
 
@@ -115,7 +113,8 @@ init intFromDate =
       , board = board
       , queue = queue ++ List.singleton harvester
       , undoOk = False
-      , undoState = { undoBoard = [], undoQueue = [] }
+      , undoBoard = []
+      , undoQueue = []
       , debug = ""
       }
     , Cmd.none
@@ -233,7 +232,8 @@ update msg model =
                         coord
                 , queue = List.tail model.queue |> Maybe.withDefault []
                 , undoOk = True
-                , undoState = { undoBoard = model.board, undoQueue = model.queue }
+                , undoBoard = model.board
+                , undoQueue = model.queue
                 , debug = "Placing content..."
               }
             , Cmd.none
@@ -244,8 +244,8 @@ update msg model =
 
         Undo ->
             ( { model
-                | board = model.undoState.undoBoard
-                , queue = model.undoState.undoQueue
+                | board = model.undoBoard
+                , queue = model.undoQueue
                 , undoOk = False
               }
             , Cmd.none
