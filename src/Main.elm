@@ -28,15 +28,19 @@ type alias Model =
     { initialInt : Int
     , currentSeed : Random.Seed
     , board : Board
-    , queue : List Content
-    , undoOk : Bool
+    , undoAllowed : Bool
     , undoBoard : Board
-    , undoQueue : List Content
     , debug : String
     }
 
 
 type alias Board =
+    { grid : Grid
+    , queue : List Content
+    }
+
+
+type alias Grid =
     List Cell
 
 
@@ -97,27 +101,28 @@ type Msg
 init : Int -> ( Model, Cmd Msg )
 init intFromDate =
     let
-        ( board, boardSeed ) =
-            initBoard intFromDate
+        ( grid, gridSeed ) =
+            initGrid intFromDate
 
-        ( queue, nextSeed ) =
-            Random.step queueGenerator boardSeed
+        ( queue, queueSeed ) =
+            Random.step queueGenerator gridSeed
+
+        newBoard =
+            { grid = grid, queue = queue ++ List.singleton Harvester }
     in
     ( { initialInt = intFromDate
-      , currentSeed = nextSeed
-      , board = board
-      , queue = queue ++ List.singleton Harvester
-      , undoOk = False
-      , undoBoard = []
-      , undoQueue = []
+      , currentSeed = queueSeed
+      , board = newBoard
+      , undoAllowed = False
+      , undoBoard = { grid = [], queue = [] }
       , debug = ""
       }
     , Cmd.none
     )
 
 
-initBoard : Int -> ( Board, Random.Seed )
-initBoard initInt =
+initGrid : Int -> ( Grid, Random.Seed )
+initGrid initInt =
     let
         initSeed =
             Random.initialSeed initInt
@@ -129,7 +134,7 @@ initBoard initInt =
         ( initCoords, coordSeed ) =
             Random.step initCoordsGenerator initSeed
 
-        ( initTokens, nextSeed ) =
+        ( initTokens, tokenSeed ) =
             Random.step initTokensGenerator coordSeed
 
         initCoordToken =
@@ -147,7 +152,7 @@ initBoard initInt =
             }
         )
         initBases
-    , nextSeed
+    , tokenSeed
     )
 
 
@@ -217,15 +222,19 @@ update msg model =
         PlaceTokenOnBoard coord ->
             ( { model
                 | board =
-                    placeTokenOnBoard model.board
-                        (List.head model.queue
-                            |> Maybe.withDefault Harvester
-                        )
-                        coord
-                , queue = List.tail model.queue |> Maybe.withDefault []
-                , undoOk = True
-                , undoBoard = model.board
-                , undoQueue = model.queue
+                    { grid =
+                        placeTokenOnGrid model.board.grid
+                            (List.head model.board.queue
+                                |> Maybe.withDefault Harvester
+                            )
+                            coord
+                    , queue =
+                        List.tail model.board.queue
+                            |> Maybe.withDefault []
+                    }
+                , undoAllowed = True
+                , undoBoard =
+                    { grid = model.board.grid, queue = model.board.queue }
                 , debug = "Placing content..."
               }
             , Cmd.none
@@ -233,8 +242,12 @@ update msg model =
 
         Harvest coord ->
             ( { model
-                | board = removeCellContent model.board coord
-                , queue = List.tail model.queue |> Maybe.withDefault []
+                | board =
+                    { grid = removeCellContent model.board.grid coord
+                    , queue =
+                        List.tail model.board.queue
+                            |> Maybe.withDefault []
+                    }
                 , debug = "Harvesting..."
               }
             , Cmd.none
@@ -242,44 +255,40 @@ update msg model =
 
         Undo ->
             ( { model
-                | board = model.undoBoard
-                , queue = model.undoQueue
-                , undoOk = False
+                | board =
+                    { grid = model.undoBoard.grid
+                    , queue = model.undoBoard.queue
+                    }
+                , undoAllowed = False
               }
             , Cmd.none
             )
 
 
-removeCellContent : Board -> Coord -> Board
-removeCellContent oldBoard targetCoord =
+removeCellContent : Grid -> Coord -> Grid
+removeCellContent oldGrid targetCoord =
     List.map
         (\cell ->
             if cell.coord == targetCoord then
-                { coord = cell.coord
-                , base = nextBase cell.base
-                , content = Nothing
-                }
+                { cell | base = nextBase cell.base, content = Nothing }
 
             else
                 cell
         )
-        oldBoard
+        oldGrid
 
 
-placeTokenOnBoard : Board -> Content -> Coord -> Board
-placeTokenOnBoard oldBoard newContent targetCoord =
+placeTokenOnGrid : Grid -> Content -> Coord -> Grid
+placeTokenOnGrid oldGrid newContent targetCoord =
     List.map
         (\cell ->
             if cell.coord == targetCoord then
-                { coord = cell.coord
-                , base = cell.base
-                , content = Just newContent
-                }
+                { cell | content = Just newContent }
 
             else
                 cell
         )
-        oldBoard
+        oldGrid
 
 
 view : Model -> Html Msg
@@ -294,17 +303,17 @@ view model =
                 [ Ui.spacing 15
                 , Ui.centerX
                 ]
-                [ viewGameInfo model
-                , viewQueue model.queue
-                , viewBoard model
+                [ viewGameInfo model.initialInt
+                , viewQueue model.board.queue
+                , viewBoard model.board
                 , viewButtons model
                 ]
             , Ui.el [ Ui.width <| Ui.px 600 ] <| viewDebug model
             ]
 
 
-viewGameInfo : Model -> Ui.Element Msg
-viewGameInfo model =
+viewGameInfo : Int -> Ui.Element Msg
+viewGameInfo int =
     Ui.row [ Ui.spaceEvenly, Ui.height <| Ui.px 50 ]
         [ Ui.el
             [ Font.family <| [ Font.typeface "Source Code Pro" ]
@@ -314,7 +323,7 @@ viewGameInfo model =
           <|
             Ui.text <|
                 "Game Id: "
-                    ++ idFromInt model.initialInt
+                    ++ idFromInt int
         ]
 
 
@@ -344,35 +353,35 @@ viewQueueCell content =
         viewContent content
 
 
-viewBoard : Model -> Ui.Element Msg
-viewBoard model =
+viewBoard : Board -> Ui.Element Msg
+viewBoard board =
     let
         viewRow y =
-            getRow y model.board
-                |> List.map (viewCell model)
+            getRow y board.grid
+                |> List.map (viewCell board)
                 |> Ui.row [ Ui.spacing 0 ]
     in
     axis |> List.map viewRow |> Ui.column [ Ui.spacing 0 ]
 
 
-getRow : Int -> Board -> List Cell
-getRow row board =
-    List.filter (\cell -> Tuple.first cell.coord == row) board
+getRow : Int -> Grid -> List Cell
+getRow row grid =
+    List.filter (\cell -> Tuple.first cell.coord == row) grid
 
 
-viewCell : Model -> Cell -> Ui.Element Msg
-viewCell model cell =
+viewCell : Board -> Cell -> Ui.Element Msg
+viewCell board cell =
     Ui.el [ Ui.width <| Ui.px 100, Ui.height <| Ui.px 100 ] <|
         Ui.el
             ([ Background.color <| baseColour cell.base
              , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
-             , roundedCorners model.board cell
+             , roundedCorners board.grid cell
              , Events.onClick <|
-                if List.length model.queue > 1 && cell.content == Nothing then
+                if List.length board.queue > 1 && cell.content == Nothing then
                     PlaceTokenOnBoard cell.coord
 
                 else if
-                    model.queue
+                    board.queue
                         == [ Harvester ]
                         && cell.content
                         /= Nothing
@@ -384,7 +393,7 @@ viewCell model cell =
              , Border.color <|
                 baseColour <|
                     if
-                        neighbourBase model.board cell.coord Below
+                        neighbourBase board.grid cell.coord Below
                             == Just cell.base
                     then
                         cell.base
@@ -392,7 +401,7 @@ viewCell model cell =
                     else
                         nextBase cell.base
              ]
-                ++ cellAlignments model.board cell
+                ++ cellAlignments board.grid cell
             )
         <|
             Ui.el [ Ui.centerX, Ui.centerY ] <|
@@ -404,13 +413,13 @@ viewCell model cell =
                         Ui.none
 
 
-cellAlignments : Board -> Cell -> List (Ui.Attribute Msg)
-cellAlignments board cell =
+cellAlignments : Grid -> Cell -> List (Ui.Attribute Msg)
+cellAlignments grid cell =
     let
         flushTo direction =
-            neighbourBase board cell.coord direction
+            neighbourBase grid cell.coord direction
                 == Just cell.base
-                || neighbourBase board cell.coord direction
+                || neighbourBase grid cell.coord direction
                 == Nothing
 
         verticalAttrs =
@@ -444,8 +453,8 @@ cellAlignments board cell =
     verticalAttrs ++ horizontalAttrs
 
 
-roundedCorners : Board -> Cell -> Ui.Attribute Msg
-roundedCorners board cell =
+roundedCorners : Grid -> Cell -> Ui.Attribute Msg
+roundedCorners grid cell =
     let
         round match =
             if match == True then
@@ -455,30 +464,30 @@ roundedCorners board cell =
                 8
     in
     Border.roundEach
-        { topRight = cornerBaseMatch board cell [ Above, Right ] |> round
-        , bottomRight = cornerBaseMatch board cell [ Right, Below ] |> round
-        , bottomLeft = cornerBaseMatch board cell [ Below, Left ] |> round
-        , topLeft = cornerBaseMatch board cell [ Left, Above ] |> round
+        { topRight = cornerBaseMatch grid cell [ Above, Right ] |> round
+        , bottomRight = cornerBaseMatch grid cell [ Right, Below ] |> round
+        , bottomLeft = cornerBaseMatch grid cell [ Below, Left ] |> round
+        , topLeft = cornerBaseMatch grid cell [ Left, Above ] |> round
         }
 
 
-cornerBaseMatch : Board -> Cell -> List Direction -> Bool
-cornerBaseMatch board cell directions =
+cornerBaseMatch : Grid -> Cell -> List Direction -> Bool
+cornerBaseMatch grid cell directions =
     let
         neighbourBases =
-            List.map (neighbourBase board cell.coord) directions
+            List.map (neighbourBase grid cell.coord) directions
                 |> List.filterMap identity
     in
     List.member cell.base neighbourBases
 
 
-neighbourBase : Board -> Coord -> Direction -> Maybe Base
-neighbourBase board coord direction =
-    Maybe.map .base <| neighbour board coord direction
+neighbourBase : Grid -> Coord -> Direction -> Maybe Base
+neighbourBase grid coord direction =
+    Maybe.map .base <| neighbour grid coord direction
 
 
-neighbour : Board -> Coord -> Direction -> Maybe Cell
-neighbour board ( x, y ) direction =
+neighbour : Grid -> Coord -> Direction -> Maybe Cell
+neighbour grid ( x, y ) direction =
     let
         neighbourCoord =
             case direction of
@@ -494,12 +503,12 @@ neighbour board ( x, y ) direction =
                 Left ->
                     ( x, y - 1 )
     in
-    getCell board neighbourCoord
+    getCell grid neighbourCoord
 
 
-getCell : Board -> Coord -> Maybe Cell
-getCell board coord =
-    List.filter (\cell -> cell.coord == coord) board |> List.head
+getCell : Grid -> Coord -> Maybe Cell
+getCell grid coord =
+    List.filter (\cell -> cell.coord == coord) grid |> List.head
 
 
 baseColour : Base -> Ui.Color
@@ -633,7 +642,7 @@ viewBonus bonus =
 viewButtons : Model -> Ui.Element Msg
 viewButtons model =
     Ui.row [ Ui.height <| Ui.px 50 ] <|
-        [ if model.undoOk then
+        [ if model.undoAllowed then
             Input.button
                 [ Background.color <| Ui.rgb255 168 153 132
                 , Ui.height <| Ui.px 50
@@ -659,7 +668,7 @@ viewDebug model =
     Ui.column [ Ui.spacing 20 ] <|
         List.map viewDebugElement
             [ "Current Seed: " ++ Debug.toString model.currentSeed
-            , "Queue: " ++ Debug.toString model.queue
+            , "Queue: " ++ Debug.toString model.board.queue
             , "Debug: " ++ Debug.toString model.debug
             ]
 
