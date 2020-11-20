@@ -57,10 +57,9 @@ type Base
     | Base3
 
 
-type alias Content =
-    { token : Token
-    , bonus : Bonus
-    }
+type Content
+    = Plant Token Bonus
+    | Harvester
 
 
 type Token
@@ -74,7 +73,6 @@ type Token
     | Grown2
     | Grown3
     | Disappearing Int
-    | Harvester
 
 
 type Bonus
@@ -104,14 +102,11 @@ init intFromDate =
 
         ( queue, nextSeed ) =
             Random.step queueGenerator boardSeed
-
-        harvester =
-            { token = Harvester, bonus = NoBonus }
     in
     ( { initialInt = intFromDate
       , currentSeed = nextSeed
       , board = board
-      , queue = queue ++ List.singleton harvester
+      , queue = queue ++ List.singleton Harvester
       , undoOk = False
       , undoBoard = []
       , undoQueue = []
@@ -190,7 +185,7 @@ baseFromCoord initInt ( x, y ) =
 
 queueGenerator : Random.Generator (List Content)
 queueGenerator =
-    Random.list 3 <| Random.map2 Content standardGenerator bonusGenerator
+    Random.list 3 <| Random.map2 Plant standardGenerator bonusGenerator
 
 
 initCoordsGenerator : Random.Generator (List Coord)
@@ -200,7 +195,7 @@ initCoordsGenerator =
 
 initTokensGenerator : Random.Generator (List Content)
 initTokensGenerator =
-    Random.list 6 <| Random.map2 Content standardGenerator bonusGenerator
+    Random.list 6 <| Random.map2 Plant standardGenerator bonusGenerator
 
 
 standardGenerator : Random.Generator Token
@@ -224,10 +219,7 @@ update msg model =
                 | board =
                     placeTokenOnBoard model.board
                         (List.head model.queue
-                            |> Maybe.withDefault
-                                { token = Harvester
-                                , bonus = NoBonus
-                                }
+                            |> Maybe.withDefault Harvester
                         )
                         coord
                 , queue = List.tail model.queue |> Maybe.withDefault []
@@ -330,7 +322,7 @@ viewQueue : List Content -> Ui.Element Msg
 viewQueue queue =
     (queue
         |> List.head
-        |> Maybe.withDefault { token = Harvester, bonus = NoBonus }
+        |> Maybe.withDefault Harvester
         |> viewQueueCell
         |> Ui.el
             [ Background.color <| Ui.rgb255 235 219 178
@@ -381,7 +373,7 @@ viewCell model cell =
 
                 else if
                     model.queue
-                        == [ { token = Harvester, bonus = NoBonus } ]
+                        == [ Harvester ]
                         && cell.content
                         /= Nothing
                 then
@@ -537,7 +529,18 @@ nextBase base =
 
 
 viewContent : Content -> Ui.Element Msg
-viewContent { token, bonus } =
+viewContent content =
+    case content of
+        Plant token bonus ->
+            viewPlant token bonus
+
+        Harvester ->
+            Ui.image sharedAttributes
+                { src = "images/spade.png", description = "Spade" }
+
+
+viewPlant : Token -> Bonus -> Ui.Element Msg
+viewPlant token bonus =
     let
         bonusElement =
             if bonus == Bonus then
@@ -551,36 +554,36 @@ viewContent { token, bonus } =
             else
                 Ui.none
 
-        sharedAttributes =
-            [ Ui.width <| Ui.px 55
-            , Ui.height <| Ui.px 55
-            , Ui.centerX
-            , Ui.inFront bonusElement
-            ]
+        tokenAttributes =
+            Ui.inFront bonusElement :: sharedAttributes
     in
     case token of
         Standard1 ->
-            Ui.image sharedAttributes
+            Ui.image tokenAttributes
                 { src = "images/high-grass.png", description = "Grass" }
 
         Standard2 ->
-            Ui.image sharedAttributes
+            Ui.image tokenAttributes
                 { src = "images/daisy.png", description = "Daisy" }
 
         Standard3 ->
-            Ui.image sharedAttributes
+            Ui.image tokenAttributes
                 { src = "images/sunflower.png", description = "Sunflower" }
 
         Disappearing _ ->
-            Ui.image sharedAttributes
+            Ui.image tokenAttributes
                 { src = "images/dandelion-flower.png", description = "Dandelion" }
-
-        Harvester ->
-            Ui.image sharedAttributes
-                { src = "images/spade.png", description = "Spade" }
 
         _ ->
             viewToken token ++ viewBonus bonus |> Ui.text
+
+
+sharedAttributes : List (Ui.Attribute Msg)
+sharedAttributes =
+    [ Ui.width <| Ui.px 55
+    , Ui.height <| Ui.px 55
+    , Ui.centerX
+    ]
 
 
 viewToken : Token -> String
@@ -615,9 +618,6 @@ viewToken token =
 
         Disappearing counter ->
             "D." ++ String.fromInt counter
-
-        Harvester ->
-            "H"
 
 
 viewBonus : Bonus -> String
