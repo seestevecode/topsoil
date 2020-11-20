@@ -240,7 +240,13 @@ update msg model =
             )
 
         Harvest coord ->
-            ( { model | debug = "Harvesting..." }, Cmd.none )
+            ( { model
+                | board = removeCellContent model.board coord
+                , queue = List.tail model.queue |> Maybe.withDefault []
+                , debug = "Harvesting..."
+              }
+            , Cmd.none
+            )
 
         Undo ->
             ( { model
@@ -250,6 +256,22 @@ update msg model =
               }
             , Cmd.none
             )
+
+
+removeCellContent : Board -> Coord -> Board
+removeCellContent oldBoard targetCoord =
+    List.map
+        (\cell ->
+            if cell.coord == targetCoord then
+                { coord = cell.coord
+                , base = nextBase cell.base
+                , content = Nothing
+                }
+
+            else
+                cell
+        )
+        oldBoard
 
 
 placeTokenOnBoard : Board -> Content -> Coord -> Board
@@ -637,6 +659,7 @@ viewDebug model =
     Ui.column [ Ui.spacing 20 ] <|
         List.map viewDebugElement
             [ "Current Seed: " ++ Debug.toString model.currentSeed
+            , "Queue: " ++ Debug.toString model.queue
             , "Debug: " ++ Debug.toString model.debug
             ]
 
