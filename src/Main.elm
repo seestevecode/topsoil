@@ -11,6 +11,7 @@ import Html exposing (Html)
 import List.Extra as ListX
 import Random
 import Random.List
+import Set
 import Simplex
 
 
@@ -242,13 +243,8 @@ update msg model =
 
         Harvest coord ->
             ( { model
-                | board =
-                    { grid = removeCellContent model.board.grid coord
-                    , queue =
-                        List.tail model.board.queue
-                            |> Maybe.withDefault []
-                    }
-                , debug = "Harvesting..."
+                | debug =
+                    harvestFrom model.board.grid coord |> Debug.toString
               }
             , Cmd.none
             )
@@ -263,6 +259,106 @@ update msg model =
               }
             , Cmd.none
             )
+
+
+applyUntil : (a -> Bool) -> (a -> a) -> a -> a
+applyUntil pred step a =
+    if pred a then
+        a
+
+    else
+        applyUntil pred step (step a)
+
+
+harvestFrom : Grid -> Coord -> List Cell
+harvestFrom grid initCoord =
+    { toCheck = Set.singleton initCoord
+    , toHarvest = Set.singleton initCoord
+    , checked = Set.empty
+    }
+        |> applyUntil
+            (\acc -> acc.toCheck == Set.empty)
+            (\acc ->
+                let
+                    checkCoord =
+                        Set.toList acc.toCheck
+                            |> List.head
+                            |> Maybe.withDefault ( -1, -1 )
+                in
+                case matchedNeighbours grid checkCoord of
+                    [] ->
+                        { acc
+                            | toCheck =
+                                Set.diff acc.toCheck (Set.singleton checkCoord)
+                            , checked =
+                                Set.union acc.checked (Set.singleton checkCoord)
+                        }
+
+                    matches ->
+                        { acc
+                            | toCheck =
+                                Set.diff acc.toCheck (Set.singleton checkCoord)
+                                    |> Set.union
+                                        (Set.diff
+                                            (Set.fromList matches)
+                                            acc.checked
+                                        )
+                            , toHarvest =
+                                Set.union
+                                    acc.toHarvest
+                                    (Set.fromList matches)
+                            , checked =
+                                Set.union
+                                    acc.checked
+                                    (Set.singleton checkCoord)
+                        }
+            )
+        |> .toHarvest
+        |> Set.toList
+        |> List.map (getCell grid)
+        |> List.filterMap identity
+
+
+matchedNeighbours : Grid -> Coord -> List Coord
+matchedNeighbours grid coord =
+    List.map (neighbour grid coord) [ Above, Right, Below, Left ]
+        |> List.filterMap identity
+        |> List.map .coord
+        |> List.filter (harvestMatch grid coord)
+
+
+harvestMatch : Grid -> Coord -> Coord -> Bool
+harvestMatch grid coordA coordB =
+    let
+        cellA =
+            getCell grid coordA
+
+        cellB =
+            getCell grid coordB
+    in
+    case ( cellA, cellB ) of
+        ( Just a, Just b ) ->
+            harvestMatchCells a b
+
+        _ ->
+            False
+
+
+harvestMatchCells : Cell -> Cell -> Bool
+harvestMatchCells cellA cellB =
+    let
+        baseMatch =
+            cellA.base == cellB.base
+
+        contentMatch =
+            case ( cellA.content, cellB.content ) of
+                ( Just (Plant tokenA _), Just (Plant tokenB _) ) ->
+                    tokenA == tokenB
+
+                _ ->
+                    False
+    in
+    baseMatch && contentMatch
 
 
 removeCellContent : Grid -> Coord -> Grid
