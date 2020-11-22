@@ -243,8 +243,14 @@ update msg model =
 
         Harvest coord ->
             ( { model
-                | debug =
-                    harvestFrom model.board.grid coord |> Debug.toString
+                | board =
+                    { grid =
+                        clearHarvest model.board.grid
+                            (harvestFrom model.board.grid coord
+                                |> List.map .coord
+                            )
+                    , queue = model.board.queue
+                    }
               }
             , Cmd.none
             )
@@ -259,6 +265,19 @@ update msg model =
               }
             , Cmd.none
             )
+
+
+clearHarvest : Grid -> List Coord -> Grid
+clearHarvest grid harvestCoords =
+    List.map
+        (\cell ->
+            if List.member cell.coord harvestCoords then
+                { cell | base = nextBase cell.base, content = Nothing }
+
+            else
+                cell
+        )
+        grid
 
 
 applyUntil : (a -> Bool) -> (a -> a) -> a -> a
