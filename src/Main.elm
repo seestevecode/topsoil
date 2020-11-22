@@ -221,6 +221,10 @@ update msg model =
             ( model, Cmd.none )
 
         PlaceTokenOnBoard coord ->
+            let
+                ( newQueue, newQueueSeed ) =
+                    Random.step queueGenerator model.currentSeed
+            in
             ( { model
                 | board =
                     { grid =
@@ -230,13 +234,26 @@ update msg model =
                             )
                             coord
                     , queue =
-                        List.tail model.board.queue
-                            |> Maybe.withDefault []
+                        case model.board.queue of
+                            [ _, h ] ->
+                                h :: newQueue
+
+                            _ :: qs ->
+                                qs
+
+                            _ ->
+                                model.board.queue
                     }
+                , currentSeed =
+                    case model.board.queue of
+                        [ _, _ ] ->
+                            newQueueSeed
+
+                        _ ->
+                            model.currentSeed
                 , undoAllowed = True
                 , undoBoard =
                     { grid = model.board.grid, queue = model.board.queue }
-                , debug = "Placing content..."
               }
             , Cmd.none
             )
@@ -249,7 +266,13 @@ update msg model =
                             (harvestFrom model.board.grid coord
                                 |> List.map .coord
                             )
-                    , queue = model.board.queue
+                    , queue =
+                        case model.board.queue of
+                            Harvester :: rest ->
+                                rest ++ [ Harvester ]
+
+                            _ ->
+                                model.board.queue
                     }
               }
             , Cmd.none
@@ -496,8 +519,8 @@ viewCell board cell =
                     PlaceTokenOnBoard cell.coord
 
                 else if
-                    board.queue
-                        == [ Harvester ]
+                    List.head board.queue
+                        == Just Harvester
                         && cell.content
                         /= Nothing
                 then
