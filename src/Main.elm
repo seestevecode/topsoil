@@ -31,6 +31,7 @@ type alias Model =
     , board : Board
     , undoAllowed : Bool
     , undoBoard : Board
+    , undoSeed : Random.Seed
     , debug : String
     }
 
@@ -116,6 +117,7 @@ init intFromDate =
       , board = newBoard
       , undoAllowed = False
       , undoBoard = { grid = [], queue = [] }
+      , undoSeed = queueSeed
       , debug = ""
       }
     , Cmd.none
@@ -254,6 +256,7 @@ update msg model =
                 , undoAllowed = True
                 , undoBoard =
                     { grid = model.board.grid, queue = model.board.queue }
+                , undoSeed = model.currentSeed
               }
             , Cmd.none
             )
@@ -274,6 +277,8 @@ update msg model =
                             _ ->
                                 model.board.queue
                     }
+                , undoBoard = { grid = model.board.grid, queue = model.board.queue }
+                , undoSeed = model.currentSeed
               }
             , Cmd.none
             )
@@ -284,6 +289,7 @@ update msg model =
                     { grid = model.undoBoard.grid
                     , queue = model.undoBoard.queue
                     }
+                , currentSeed = model.undoSeed
                 , undoAllowed = False
               }
             , Cmd.none
