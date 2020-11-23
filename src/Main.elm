@@ -515,19 +515,15 @@ viewCell board cell =
              , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
              , roundedCorners board.grid cell
              , Events.onClick <|
-                if List.length board.queue > 1 && cell.content == Nothing then
-                    PlaceTokenOnBoard cell.coord
+                case ( List.head board.queue, cell.content ) of
+                    ( Just Harvester, Just _ ) ->
+                        Harvest cell.coord
 
-                else if
-                    List.head board.queue
-                        == Just Harvester
-                        && cell.content
-                        /= Nothing
-                then
-                    Harvest cell.coord
+                    ( Just (Plant _ _), Nothing ) ->
+                        PlaceTokenOnBoard cell.coord
 
-                else
-                    NoOp
+                    _ ->
+                        NoOp
              , Border.color <|
                 baseColour <|
                     if
@@ -807,6 +803,7 @@ viewDebug model =
         List.map viewDebugElement
             [ "Current Seed: " ++ Debug.toString model.currentSeed
             , "Queue: " ++ Debug.toString model.board.queue
+            , "Test: " ++ Debug.toString (List.head model.board.queue)
             , "Debug: " ++ Debug.toString model.debug
             ]
 
