@@ -277,6 +277,7 @@ update msg model =
                             _ ->
                                 model.board.queue
                     }
+                , undoAllowed = True
                 , undoBoard = { grid = model.board.grid, queue = model.board.queue }
                 , undoSeed = model.currentSeed
               }
