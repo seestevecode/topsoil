@@ -264,6 +264,10 @@ update msg model =
             )
 
         Harvest coord ->
+            let
+                harvestScore =
+                    harvestFrom model.board.grid coord |> scoreHarvest
+            in
             ( { model
                 | board =
                     { grid =
@@ -282,6 +286,8 @@ update msg model =
                 , undoAllowed = True
                 , undoBoard = { grid = model.board.grid, queue = model.board.queue }
                 , undoSeed = model.currentSeed
+                , debug = String.fromInt harvestScore
+                , score = model.score + harvestScore
               }
             , Cmd.none
             )
@@ -310,6 +316,31 @@ clearHarvest grid harvestCoords =
                 cell
         )
         grid
+
+
+scoreHarvest : List Cell -> Int
+scoreHarvest cells =
+    let
+        bonusCount =
+            List.map .content cells
+                |> List.filterMap identity
+                |> List.map getBonusFromContent
+                |> List.filterMap identity
+                |> List.filter (\bonus -> bonus == Bonus)
+                |> List.length
+    in
+    List.indexedMap (\index _ -> index + bonusCount + 1) cells
+        |> List.sum
+
+
+getBonusFromContent : Content -> Maybe Bonus
+getBonusFromContent content =
+    case content of
+        Plant _ bonus ->
+            Just bonus
+
+        Harvester ->
+            Nothing
 
 
 applyUntil : (a -> Bool) -> (a -> a) -> a -> a
@@ -450,7 +481,7 @@ view model =
                 [ Ui.spacing 15
                 , Ui.centerX
                 ]
-                [ viewGameInfo model.initialInt
+                [ viewGameInfo model
                 , viewQueue model.board.queue
                 , viewBoard model.board
                 , viewButtons model
@@ -459,9 +490,9 @@ view model =
             ]
 
 
-viewGameInfo : Int -> Ui.Element Msg
-viewGameInfo int =
-    Ui.row [ Ui.spaceEvenly, Ui.height <| Ui.px 50 ]
+viewGameInfo : Model -> Ui.Element Msg
+viewGameInfo model =
+    Ui.row [ Ui.width Ui.fill, Ui.spaceEvenly, Ui.height <| Ui.px 50 ]
         [ Ui.el
             [ Font.family <| [ Font.typeface "Source Code Pro" ]
             , Font.size 12
@@ -470,8 +501,17 @@ viewGameInfo int =
           <|
             Ui.text <|
                 "Game Id: "
-                    ++ idFromInt int
+                    ++ idFromInt model.initialInt
+        , viewScore model.score
         ]
+
+
+viewScore : Int -> Ui.Element Msg
+viewScore score =
+    score
+        |> String.fromInt
+        |> Ui.text
+        |> Ui.el [ Font.size 36 ]
 
 
 viewQueue : List Content -> Ui.Element Msg
