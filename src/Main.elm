@@ -516,9 +516,18 @@ getRow row grid =
 
 viewCell : Board -> Cell -> Ui.Element Msg
 viewCell board cell =
+    let
+        altCell =
+            modBy 2 (Tuple.first cell.coord + Tuple.second cell.coord) == 1
+    in
     Ui.el [ Ui.width <| Ui.px 100, Ui.height <| Ui.px 100 ] <|
         Ui.el
-            ([ Background.color <| baseColour cell.base
+            ([ Background.color <|
+                if altCell then
+                    baseColour cell.base
+
+                else
+                    altBaseColour cell.base
              , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
              , roundedCorners board.grid cell
              , Events.onClick <|
@@ -532,7 +541,13 @@ viewCell board cell =
                     _ ->
                         NoOp
              , Border.color <|
-                baseColour <|
+                (if altCell then
+                    baseColour
+
+                 else
+                    altBaseColour
+                )
+                <|
                     if
                         neighbourBase board.grid cell.coord Below
                             == Just cell.base
@@ -663,6 +678,19 @@ baseColour base =
 
         Base3 ->
             Ui.rgb255 69 133 136
+
+
+altBaseColour : Base -> Ui.Color
+altBaseColour base =
+    case base of
+        Base1 ->
+            Ui.rgb255 207 149 32
+
+        Base2 ->
+            Ui.rgb255 144 144 24
+
+        Base3 ->
+            Ui.rgb255 65 126 126
 
 
 nextBase : Base -> Base
