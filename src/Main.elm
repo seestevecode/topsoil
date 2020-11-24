@@ -33,6 +33,7 @@ type alias Model =
     , undoBoard : Board
     , undoSeed : Random.Seed
     , debug : String
+    , score : Int
     }
 
 
@@ -119,6 +120,7 @@ init intFromDate =
       , undoBoard = { grid = [], queue = [] }
       , undoSeed = queueSeed
       , debug = ""
+      , score = 0
       }
     , Cmd.none
     )
