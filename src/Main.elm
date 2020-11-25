@@ -109,7 +109,7 @@ init intFromDate =
             initGrid intFromDate
 
         ( queue, queueSeed ) =
-            Random.step queueGenerator gridSeed
+            Random.step (queueGenerator 0) gridSeed
 
         newBoard =
             { grid = grid, queue = queue ++ List.singleton Harvester }
@@ -142,7 +142,7 @@ initGrid initInt =
             Random.step initCoordsGenerator initSeed
 
         ( initTokens, tokenSeed ) =
-            Random.step initTokensGenerator coordSeed
+            Random.step (initTokensGenerator 0) coordSeed
 
         initCoordToken =
             List.map2 Tuple.pair initCoords initTokens
@@ -195,9 +195,9 @@ baseFromCoord initInt ( x, y ) =
            )
 
 
-queueGenerator : Random.Generator (List Content)
-queueGenerator =
-    Random.list 3 <| Random.map2 Plant standardGenerator bonusGenerator
+queueGenerator : Int -> Random.Generator (List Content)
+queueGenerator score =
+    Random.list 3 <| Random.map2 Plant (standardGenerator score) bonusGenerator
 
 
 initCoordsGenerator : Random.Generator (List Coord)
@@ -205,14 +205,18 @@ initCoordsGenerator =
     Random.map (List.take 6) <| Random.List.shuffle coords
 
 
-initTokensGenerator : Random.Generator (List Content)
-initTokensGenerator =
-    Random.list 6 <| Random.map2 Plant standardGenerator bonusGenerator
+initTokensGenerator : Int -> Random.Generator (List Content)
+initTokensGenerator score =
+    Random.list 6 <| Random.map2 Plant (standardGenerator score) bonusGenerator
 
 
-standardGenerator : Random.Generator Token
-standardGenerator =
-    Random.uniform Standard1 [ Standard2, Standard3 ]
+standardGenerator : Int -> Random.Generator Token
+standardGenerator score =
+    if score < 20 then
+        Random.uniform Standard1 [ Standard2, Standard3 ]
+
+    else
+        Random.uniform Standard1 [ Standard2, Standard3, Growing1 2 ]
 
 
 bonusGenerator : Random.Generator Bonus
@@ -229,7 +233,7 @@ update msg model =
         PlaceTokenOnBoard coord ->
             let
                 ( newQueue, newQueueSeed ) =
-                    Random.step queueGenerator model.currentSeed
+                    Random.step (queueGenerator model.score) model.currentSeed
             in
             ( { model
                 | board =
