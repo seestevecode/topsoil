@@ -32,6 +32,7 @@ type alias Model =
     , undoAllowed : Bool
     , undoBoard : Board
     , undoSeed : Random.Seed
+    , undoScore : Int
     , debug : String
     , score : Int
     }
@@ -121,6 +122,7 @@ init intFromDate =
       , undoSeed = queueSeed
       , debug = ""
       , score = 0
+      , undoScore = 0
       }
     , Cmd.none
     )
@@ -288,6 +290,7 @@ update msg model =
                 , undoSeed = model.currentSeed
                 , debug = String.fromInt harvestScore
                 , score = model.score + harvestScore
+                , undoScore = model.score
               }
             , Cmd.none
             )
@@ -300,6 +303,7 @@ update msg model =
                     }
                 , currentSeed = model.undoSeed
                 , undoAllowed = False
+                , score = model.undoScore
               }
             , Cmd.none
             )
