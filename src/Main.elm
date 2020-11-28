@@ -11,7 +11,7 @@ import Html exposing (Html)
 import List.Extra as ListX
 import Random
 import Random.List
-import Set
+import Set exposing (Set)
 import Simplex
 
 
@@ -29,12 +29,11 @@ type alias Model =
     { initialInt : Int
     , currentSeed : Random.Seed
     , board : Board
-    , undoAllowed : Bool
-    , undoBoard : Board
-    , undoSeed : Random.Seed
-    , undoScore : Int
-    , debug : String
     , score : Int
+    , undoAllowed : Bool
+    , undoSeed : Random.Seed
+    , undoBoard : Board
+    , undoScore : Int
     }
 
 
@@ -112,16 +111,15 @@ init intFromDate =
             Random.step (queueGenerator 0) gridSeed
 
         newBoard =
-            { grid = grid, queue = queue ++ List.singleton Harvester }
+            { grid = grid, queue = queue ++ [ Harvester ] }
     in
     ( { initialInt = intFromDate
       , currentSeed = queueSeed
       , board = newBoard
-      , undoAllowed = False
-      , undoBoard = { grid = [], queue = [] }
-      , undoSeed = queueSeed
-      , debug = ""
       , score = 0
+      , undoAllowed = False
+      , undoSeed = queueSeed
+      , undoBoard = { grid = [], queue = [] }
       , undoScore = 0
       }
     , Cmd.none
@@ -144,7 +142,7 @@ initGrid initInt =
         ( initTokens, tokenSeed ) =
             Random.step (initTokensGenerator 0) coordSeed
 
-        initCoordToken =
+        initCoordTokens =
             List.map2 Tuple.pair initCoords initTokens
     in
     ( List.map
@@ -152,9 +150,7 @@ initGrid initInt =
             { coord = baseCoord
             , base = base
             , content =
-                ListX.find
-                    (\( tokenCoord, _ ) -> baseCoord == tokenCoord)
-                    initCoordToken
+                ListX.find (Tuple.first >> (==) baseCoord) initCoordTokens
                     |> Maybe.map Tuple.second
             }
         )
@@ -197,7 +193,7 @@ baseFromCoord initInt ( x, y ) =
 
 queueGenerator : Int -> Random.Generator (List Content)
 queueGenerator score =
-    Random.list 3 <| Random.map2 Plant (standardGenerator score) bonusGenerator
+    Random.list 3 (contentGenerator score)
 
 
 initCoordsGenerator : Random.Generator (List Coord)
@@ -207,11 +203,16 @@ initCoordsGenerator =
 
 initTokensGenerator : Int -> Random.Generator (List Content)
 initTokensGenerator score =
-    Random.list 6 <| Random.map2 Plant (standardGenerator score) bonusGenerator
+    Random.list 6 (contentGenerator score)
 
 
-standardGenerator : Int -> Random.Generator Token
-standardGenerator score =
+contentGenerator : Int -> Random.Generator Content
+contentGenerator score =
+    Random.map2 Plant (tokenGenerator score) bonusGenerator
+
+
+tokenGenerator : Int -> Random.Generator Token
+tokenGenerator score =
     if score < 20 then
         Random.uniform Standard1 [ Standard2, Standard3 ]
 
@@ -231,73 +232,10 @@ update msg model =
             ( model, Cmd.none )
 
         PlaceTokenOnBoard coord ->
-            let
-                ( newQueue, newQueueSeed ) =
-                    Random.step (queueGenerator model.score) model.currentSeed
-            in
-            ( { model
-                | board =
-                    { grid =
-                        placeTokenOnGrid model.board.grid
-                            (List.head model.board.queue
-                                |> Maybe.withDefault Harvester
-                            )
-                            coord
-                    , queue =
-                        case model.board.queue of
-                            [ _, h ] ->
-                                h :: newQueue
-
-                            _ :: qs ->
-                                qs
-
-                            _ ->
-                                model.board.queue
-                    }
-                , currentSeed =
-                    case model.board.queue of
-                        [ _, _ ] ->
-                            newQueueSeed
-
-                        _ ->
-                            model.currentSeed
-                , undoAllowed = True
-                , undoBoard =
-                    { grid = model.board.grid, queue = model.board.queue }
-                , undoSeed = model.currentSeed
-              }
-            , Cmd.none
-            )
+            ( modelAfterPlaceToken model coord, Cmd.none )
 
         Harvest coord ->
-            let
-                harvestScore =
-                    harvestFrom model.board.grid coord |> scoreHarvest
-            in
-            ( { model
-                | board =
-                    { grid =
-                        clearHarvest model.board.grid
-                            (harvestFrom model.board.grid coord
-                                |> List.map .coord
-                            )
-                    , queue =
-                        case model.board.queue of
-                            Harvester :: rest ->
-                                rest ++ [ Harvester ]
-
-                            _ ->
-                                model.board.queue
-                    }
-                , undoAllowed = True
-                , undoBoard = { grid = model.board.grid, queue = model.board.queue }
-                , undoSeed = model.currentSeed
-                , debug = String.fromInt harvestScore
-                , score = model.score + harvestScore
-                , undoScore = model.score
-              }
-            , Cmd.none
-            )
+            ( modelAfterHarvest model coord, Cmd.none )
 
         Undo ->
             ( { model
@@ -311,6 +249,70 @@ update msg model =
               }
             , Cmd.none
             )
+
+
+modelAfterPlaceToken : Model -> Coord -> Model
+modelAfterPlaceToken oldModel coord =
+    let
+        ( newQueue, newQueueSeed ) =
+            Random.step (queueGenerator oldModel.score) oldModel.currentSeed
+    in
+    { oldModel
+        | board =
+            { grid =
+                placeTokenOnGrid oldModel.board.grid
+                    (List.head oldModel.board.queue |> Maybe.withDefault Harvester)
+                    coord
+            , queue =
+                case oldModel.board.queue of
+                    [ _, h ] ->
+                        h :: newQueue
+
+                    _ :: qs ->
+                        qs
+
+                    _ ->
+                        oldModel.board.queue
+            }
+        , currentSeed =
+            case oldModel.board.queue of
+                [ _, _ ] ->
+                    newQueueSeed
+
+                _ ->
+                    oldModel.currentSeed
+        , undoAllowed = True
+        , undoSeed = oldModel.currentSeed
+        , undoBoard = oldModel.board
+    }
+
+
+modelAfterHarvest : Model -> Coord -> Model
+modelAfterHarvest oldModel coord =
+    let
+        newBoard =
+            { grid =
+                clearHarvest oldModel.board.grid
+                    (harvestFrom oldModel.board.grid coord |> List.map .coord)
+            , queue =
+                case oldModel.board.queue of
+                    Harvester :: rest ->
+                        rest ++ [ Harvester ]
+
+                    _ ->
+                        oldModel.board.queue
+            }
+    in
+    { oldModel
+        | board = newBoard
+        , score =
+            oldModel.score
+                + (harvestFrom oldModel.board.grid coord |> scoreHarvest)
+        , undoAllowed = True
+        , undoSeed = oldModel.currentSeed
+        , undoBoard = oldModel.board
+        , undoScore = oldModel.score
+    }
 
 
 clearHarvest : Grid -> List Coord -> Grid
@@ -366,47 +368,49 @@ harvestFrom grid initCoord =
     , toHarvest = Set.singleton initCoord
     , checked = Set.empty
     }
-        |> applyUntil
-            (\acc -> acc.toCheck == Set.empty)
-            (\acc ->
-                let
-                    checkCoord =
-                        Set.toList acc.toCheck
-                            |> List.head
-                            |> Maybe.withDefault ( -1, -1 )
-                in
-                case matchedNeighbours grid checkCoord of
-                    [] ->
-                        { acc
-                            | toCheck =
-                                Set.diff acc.toCheck (Set.singleton checkCoord)
-                            , checked =
-                                Set.union acc.checked (Set.singleton checkCoord)
-                        }
-
-                    matches ->
-                        { acc
-                            | toCheck =
-                                Set.diff acc.toCheck (Set.singleton checkCoord)
-                                    |> Set.union
-                                        (Set.diff
-                                            (Set.fromList matches)
-                                            acc.checked
-                                        )
-                            , toHarvest =
-                                Set.union
-                                    acc.toHarvest
-                                    (Set.fromList matches)
-                            , checked =
-                                Set.union
-                                    acc.checked
-                                    (Set.singleton checkCoord)
-                        }
-            )
+        |> applyUntil (\acc -> acc.toCheck == Set.empty) (harvestStep grid)
         |> .toHarvest
         |> Set.toList
         |> List.map (getCell grid)
         |> List.filterMap identity
+
+
+harvestStep : Grid -> HarvestInfo -> HarvestInfo
+harvestStep grid harvestInfo =
+    let
+        checkCoord =
+            Set.toList harvestInfo.toCheck
+                |> List.head
+                |> Maybe.withDefault ( -1, -1 )
+
+        checkedCoordSet =
+            Set.singleton checkCoord
+    in
+    case matchedNeighbours grid checkCoord of
+        [] ->
+            { harvestInfo
+                | toCheck = Set.diff harvestInfo.toCheck checkedCoordSet
+                , checked = Set.union harvestInfo.checked checkedCoordSet
+            }
+
+        matches ->
+            { harvestInfo
+                | toCheck =
+                    Set.diff harvestInfo.toCheck checkedCoordSet
+                        |> Set.union
+                            (Set.diff (Set.fromList matches) harvestInfo.checked)
+                , toHarvest =
+                    Set.union harvestInfo.toHarvest (Set.fromList matches)
+                , checked =
+                    Set.union harvestInfo.checked checkedCoordSet
+            }
+
+
+type alias HarvestInfo =
+    { toCheck : Set Coord
+    , toHarvest : Set Coord
+    , checked : Set Coord
+    }
 
 
 matchedNeighbours : Grid -> Coord -> List Coord
@@ -451,19 +455,6 @@ harvestMatchCells cellA cellB =
     baseMatch && contentMatch
 
 
-removeCellContent : Grid -> Coord -> Grid
-removeCellContent oldGrid targetCoord =
-    List.map
-        (\cell ->
-            if cell.coord == targetCoord then
-                { cell | base = nextBase cell.base, content = Nothing }
-
-            else
-                cell
-        )
-        oldGrid
-
-
 placeTokenOnGrid : Grid -> Content -> Coord -> Grid
 placeTokenOnGrid oldGrid newContent targetCoord =
     List.map
@@ -494,23 +485,25 @@ view model =
                 , viewBoard model.board
                 , viewButtons model
                 ]
-            , Ui.el [ Ui.width <| Ui.px 600 ] <| viewDebug model
             ]
 
 
 viewGameInfo : Model -> Ui.Element Msg
 viewGameInfo model =
-    Ui.row [ Ui.width Ui.fill, Ui.spaceEvenly, Ui.height <| Ui.px 50 ]
-        [ Ui.el
-            [ Font.family <| [ Font.typeface "Source Code Pro" ]
-            , Font.size 12
-            , Ui.alignTop
-            ]
-          <|
-            Ui.text <|
-                "Game Id: "
-                    ++ idFromInt model.initialInt
-        , viewScore model.score
+    Ui.row
+        [ Ui.width Ui.fill
+        , Ui.spaceEvenly
+        , Ui.height <| Ui.px 50
+        , Font.family <| [ Font.typeface "Source Code Pro" ]
+        ]
+        [ viewGameId model.initialInt, viewScore model.score ]
+
+
+viewGameId : Int -> Ui.Element Msg
+viewGameId id =
+    Ui.column []
+        [ Ui.el [ Font.size 12 ] <| Ui.text "Game Id: "
+        , Ui.el [ Font.size 24 ] <| Ui.text <| idFromInt id
         ]
 
 
@@ -566,48 +559,15 @@ getRow row grid =
 
 viewCell : Board -> Cell -> Ui.Element Msg
 viewCell board cell =
-    let
-        altCell =
-            modBy 2 (Tuple.first cell.coord + Tuple.second cell.coord) == 1
-    in
     Ui.el [ Ui.width <| Ui.px 100, Ui.height <| Ui.px 100 ] <|
         Ui.el
-            ([ Background.color <|
-                if altCell then
-                    baseColour cell.base
-
-                else
-                    altBaseColour cell.base
-             , Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
-             , roundedCorners board.grid cell
-             , Events.onClick <|
-                case ( List.head board.queue, cell.content ) of
-                    ( Just Harvester, Just _ ) ->
-                        Harvest cell.coord
-
-                    ( Just (Plant _ _), Nothing ) ->
-                        PlaceTokenOnBoard cell.coord
-
-                    _ ->
-                        NoOp
-             , Border.color <|
-                (if altCell then
-                    baseColour
-
-                 else
-                    altBaseColour
-                )
-                <|
-                    if
-                        neighbourBase board.grid cell.coord Below
-                            == Just cell.base
-                    then
-                        cell.base
-
-                    else
-                        nextBase cell.base
+            ([ Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
+             , cellAttrOnClick board.queue cell
+             , cellAttrCorners board.grid cell
              ]
-                ++ cellAlignments board.grid cell
+                ++ cellAttrHorizontalAlign board.grid cell
+                ++ cellAttrVerticalAlign board.grid cell
+                ++ cellAttrColours board.grid cell
             )
         <|
             Ui.el [ Ui.centerX, Ui.centerY ] <|
@@ -619,48 +579,85 @@ viewCell board cell =
                         Ui.none
 
 
-cellAlignments : Grid -> Cell -> List (Ui.Attribute Msg)
-cellAlignments grid cell =
+cellAttrColours : Grid -> Cell -> List (Ui.Attribute Msg)
+cellAttrColours grid cell =
     let
-        flushTo direction =
-            neighbourBase grid cell.coord direction
-                == Just cell.base
-                || neighbourBase grid cell.coord direction
-                == Nothing
+        altCell =
+            modBy 2 (Tuple.first cell.coord + Tuple.second cell.coord) == 1
 
-        verticalAttrs =
-            case ( flushTo Above, flushTo Below ) of
-                ( True, True ) ->
-                    [ Ui.height <| Ui.px 100 ]
+        colourFn =
+            if altCell then
+                baseColour
 
-                ( True, False ) ->
-                    [ Ui.height <| Ui.px 98, Ui.alignTop ]
+            else
+                altBaseColour
 
-                ( False, True ) ->
-                    [ Ui.height <| Ui.px 98, Ui.alignBottom ]
+        borderBase =
+            if neighbourBase grid cell.coord Below == Just cell.base then
+                cell.base
 
-                ( False, False ) ->
-                    [ Ui.height <| Ui.px 96, Ui.centerY ]
-
-        horizontalAttrs =
-            case ( flushTo Right, flushTo Left ) of
-                ( True, True ) ->
-                    [ Ui.width <| Ui.px 100 ]
-
-                ( True, False ) ->
-                    [ Ui.width <| Ui.px 98, Ui.alignRight ]
-
-                ( False, True ) ->
-                    [ Ui.width <| Ui.px 98, Ui.alignLeft ]
-
-                ( False, False ) ->
-                    [ Ui.width <| Ui.px 96, Ui.centerX ]
+            else
+                nextBase cell.base
     in
-    verticalAttrs ++ horizontalAttrs
+    [ Background.color <| colourFn cell.base
+    , Border.color <| colourFn borderBase
+    ]
 
 
-roundedCorners : Grid -> Cell -> Ui.Attribute Msg
-roundedCorners grid cell =
+cellAttrOnClick : List Content -> Cell -> Ui.Attribute Msg
+cellAttrOnClick queue cell =
+    Events.onClick <|
+        case ( List.head queue, cell.content ) of
+            ( Just Harvester, Just _ ) ->
+                Harvest cell.coord
+
+            ( Just (Plant _ _), Nothing ) ->
+                PlaceTokenOnBoard cell.coord
+
+            _ ->
+                NoOp
+
+
+cellAttrVerticalAlign : Grid -> Cell -> List (Ui.Attribute Msg)
+cellAttrVerticalAlign grid cell =
+    case ( flushTo grid cell Above, flushTo grid cell Below ) of
+        ( True, True ) ->
+            [ Ui.height <| Ui.px 100 ]
+
+        ( True, False ) ->
+            [ Ui.height <| Ui.px 98, Ui.alignTop ]
+
+        ( False, True ) ->
+            [ Ui.height <| Ui.px 98, Ui.alignBottom ]
+
+        ( False, False ) ->
+            [ Ui.height <| Ui.px 96, Ui.centerY ]
+
+
+cellAttrHorizontalAlign : Grid -> Cell -> List (Ui.Attribute Msg)
+cellAttrHorizontalAlign grid cell =
+    case ( flushTo grid cell Right, flushTo grid cell Left ) of
+        ( True, True ) ->
+            [ Ui.width <| Ui.px 100 ]
+
+        ( True, False ) ->
+            [ Ui.width <| Ui.px 98, Ui.alignRight ]
+
+        ( False, True ) ->
+            [ Ui.width <| Ui.px 98, Ui.alignLeft ]
+
+        ( False, False ) ->
+            [ Ui.width <| Ui.px 96, Ui.centerX ]
+
+
+flushTo : Grid -> Cell -> Direction -> Bool
+flushTo grid cell direction =
+    (neighbourBase grid cell.coord direction == Just cell.base)
+        || (neighbourBase grid cell.coord direction == Nothing)
+
+
+cellAttrCorners : Grid -> Cell -> Ui.Attribute Msg
+cellAttrCorners grid cell =
     let
         round match =
             if match == True then
@@ -785,25 +782,53 @@ viewPlant token bonus =
         tokenAttributes =
             Ui.inFront bonusElement :: sharedAttributes
     in
+    Ui.image tokenAttributes <| tokenImageDetails token
+
+
+tokenImageDetails : Token -> { src : String, description : String }
+tokenImageDetails token =
+    let
+        imageName =
+            tokenDetails token |> .image
+
+        description =
+            tokenDetails token |> .name
+    in
+    { src = "images/" ++ imageName ++ ".png", description = description }
+
+
+tokenDetails : Token -> { image : String, name : String }
+tokenDetails token =
     case token of
         Standard1 ->
-            Ui.image tokenAttributes
-                { src = "images/high-grass.png", description = "Grass" }
+            { image = "high-grass", name = "Grass" }
 
         Standard2 ->
-            Ui.image tokenAttributes
-                { src = "images/daisy.png", description = "Daisy" }
+            { image = "daisy", name = "Daisy" }
 
         Standard3 ->
-            Ui.image tokenAttributes
-                { src = "images/sunflower.png", description = "Sunflower" }
+            { image = "sunflower", name = "Sunflower" }
+
+        Growing1 _ ->
+            { image = "high-grass", name = "Grass" }
+
+        Growing2 _ ->
+            { image = "daisy", name = "Daisy" }
+
+        Growing3 _ ->
+            { image = "sunflower", name = "Sunflower" }
+
+        Grown1 ->
+            { image = "high-grass", name = "Grass" }
+
+        Grown2 ->
+            { image = "daisy", name = "Daisy" }
+
+        Grown3 ->
+            { image = "sunflower", name = "Sunflower" }
 
         Disappearing _ ->
-            Ui.image tokenAttributes
-                { src = "images/dandelion-flower.png", description = "Dandelion" }
-
-        _ ->
-            viewToken token ++ viewBonus bonus |> Ui.text
+            { image = "dandelion-flower", name = "Dandelion" }
 
 
 sharedAttributes : List (Ui.Attribute Msg)
@@ -812,50 +837,6 @@ sharedAttributes =
     , Ui.height <| Ui.px 55
     , Ui.centerX
     ]
-
-
-viewToken : Token -> String
-viewToken token =
-    case token of
-        Standard1 ->
-            "S1"
-
-        Standard2 ->
-            "S2"
-
-        Standard3 ->
-            "S3"
-
-        Growing1 counter ->
-            "g1." ++ String.fromInt counter
-
-        Growing2 counter ->
-            "g2." ++ String.fromInt counter
-
-        Growing3 counter ->
-            "g3." ++ String.fromInt counter
-
-        Grown1 ->
-            "G1"
-
-        Grown2 ->
-            "G2"
-
-        Grown3 ->
-            "G3"
-
-        Disappearing counter ->
-            "D." ++ String.fromInt counter
-
-
-viewBonus : Bonus -> String
-viewBonus bonus =
-    case bonus of
-        Bonus ->
-            "+"
-
-        NoBonus ->
-            ""
 
 
 viewButtons : Model -> Ui.Element Msg
@@ -876,21 +857,6 @@ viewButtons model =
           else
             Ui.none
         ]
-
-
-viewDebug : Model -> Ui.Element Msg
-viewDebug model =
-    let
-        viewDebugElement string =
-            Ui.paragraph [] <| List.singleton <| Ui.text <| string
-    in
-    Ui.column [ Ui.spacing 20 ] <|
-        List.map viewDebugElement
-            [ "Current Seed: " ++ Debug.toString model.currentSeed
-            , "Queue: " ++ Debug.toString model.board.queue
-            , "Test: " ++ Debug.toString (List.head model.board.queue)
-            , "Debug: " ++ Debug.toString model.debug
-            ]
 
 
 idFromInt : Int -> String
