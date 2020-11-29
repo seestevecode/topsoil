@@ -622,8 +622,19 @@ cellAttrOnClick : List Content -> Cell -> Ui.Attribute Msg
 cellAttrOnClick queue cell =
     Events.onClick <|
         case ( List.head queue, cell.content ) of
-            ( Just Harvester, Just _ ) ->
-                Harvest cell.coord
+            ( Just Harvester, Just (Plant token _) ) ->
+                case token of
+                    Growing1 _ ->
+                        NoOp
+
+                    Growing2 _ ->
+                        NoOp
+
+                    Growing3 _ ->
+                        NoOp
+
+                    _ ->
+                        Harvest cell.coord
 
             ( Just (Plant _ _), Nothing ) ->
                 PlaceTokenOnBoard cell.coord
