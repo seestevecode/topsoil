@@ -806,22 +806,32 @@ viewBonus bonus =
 
 viewTokenCount : Token -> Ui.Element Msg
 viewTokenCount token =
+    let
+        ( bgColour, fontColour ) =
+            case token of
+                Disappearing _ ->
+                    ( Ui.rgb255 0 0 0, Ui.rgb255 235 219 178 )
+
+                _ ->
+                    ( Ui.rgb255 235 219 178, Ui.rgb255 0 0 0 )
+
+        outerAtts =
+            [ Ui.width <| Ui.px 25
+            , Ui.height <| Ui.px 25
+            , Background.color bgColour
+            , Border.rounded 10
+            , Ui.alignBottom
+            , Ui.moveDown 5
+            , Ui.moveRight 5
+            , Ui.alignRight
+            ]
+
+        innerAtts =
+            [ Ui.centerX, Ui.centerY, Font.size 16, Font.color fontColour ]
+    in
     case getTokenCount token of
         Just count ->
-            Ui.el
-                [ Ui.width <| Ui.px 25
-                , Ui.height <| Ui.px 25
-                , Background.color <| Ui.rgb255 235 219 178
-                , Border.rounded 10
-                , Ui.alignBottom
-                , Ui.moveDown 5
-                , Ui.moveRight 5
-                , Ui.alignRight
-                ]
-            <|
-                Ui.el [ Ui.centerX, Ui.centerY, Font.size 16 ] <|
-                    Ui.text <|
-                        String.fromInt count
+            Ui.el outerAtts <| Ui.el innerAtts <| Ui.text <| String.fromInt count
 
         Nothing ->
             Ui.none
