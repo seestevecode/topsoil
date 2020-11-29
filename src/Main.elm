@@ -821,10 +821,10 @@ viewTokenCount token =
         ( bgColour, fontColour ) =
             case token of
                 Disappearing _ ->
-                    ( Ui.rgb255 0 0 0, Ui.rgb255 235 219 178 )
+                    ( Ui.rgba255 0 0 0 0.8, Ui.rgb255 235 219 178 )
 
                 _ ->
-                    ( Ui.rgb255 235 219 178, Ui.rgb255 0 0 0 )
+                    ( Ui.rgba255 235 219 178 0.8, Ui.rgb255 0 0 0 )
 
         outerAtts =
             [ Ui.width <| Ui.px 25
