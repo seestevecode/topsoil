@@ -214,10 +214,24 @@ contentGenerator score =
 tokenGenerator : Int -> Random.Generator Token
 tokenGenerator score =
     if score < 20 then
-        Random.uniform Standard1 [ Standard2, Standard3 ]
+        Random.uniform Standard1 <| List.take 2 nextTokens
+
+    else if score < 50 then
+        Random.uniform Standard1 <| List.take 3 nextTokens
+
+    else if score < 80 then
+        Random.uniform Standard1 <| List.take 4 nextTokens
+
+    else if score < 100 then
+        Random.uniform Standard1 <| List.take 5 nextTokens
 
     else
-        Random.uniform Standard1 [ Standard2, Standard3, Growing1 2 ]
+        Random.uniform Standard1 nextTokens
+
+
+nextTokens : List Token
+nextTokens =
+    [ Standard2, Standard3, Growing1 2, Growing2 3, Growing3 5, Disappearing 3 ]
 
 
 bonusGenerator : Random.Generator Bonus
@@ -807,25 +821,25 @@ tokenDetails token =
             { image = "daisy", name = "Daisy" }
 
         Standard3 ->
-            { image = "sunflower", name = "Sunflower" }
+            { image = "spoted-flower", name = "Spotted flower" }
 
         Growing1 _ ->
-            { image = "high-grass", name = "Grass" }
+            { image = "sesame", name = "Seeds" }
 
         Growing2 _ ->
-            { image = "daisy", name = "Daisy" }
+            { image = "bud", name = "Bud" }
 
         Growing3 _ ->
-            { image = "sunflower", name = "Sunflower" }
+            { image = "bulb", name = "Bulb" }
 
         Grown1 ->
-            { image = "high-grass", name = "Grass" }
+            { image = "sunflower", name = "Sunflower" }
 
         Grown2 ->
-            { image = "daisy", name = "Daisy" }
+            { image = "rose", name = "Rose" }
 
         Grown3 ->
-            { image = "sunflower", name = "Sunflower" }
+            { image = "viola", name = "Viola" }
 
         Disappearing _ ->
             { image = "dandelion-flower", name = "Dandelion" }
