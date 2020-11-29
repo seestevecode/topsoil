@@ -781,22 +781,69 @@ viewContent content =
 viewPlant : Token -> Bonus -> Ui.Element Msg
 viewPlant token bonus =
     let
-        bonusElement =
-            if bonus == Bonus then
-                Ui.image
-                    [ Ui.width <| Ui.px 15
-                    , Ui.height <| Ui.px 15
-                    , Ui.moveUp 10
-                    ]
-                    { src = "images/bee.png", description = "Bee" }
-
-            else
-                Ui.none
-
         tokenAttributes =
-            Ui.inFront bonusElement :: sharedAttributes
+            [ Ui.inFront <| viewBonus bonus
+            , Ui.inFront <| viewTokenCount token
+            ]
+                ++ sharedAttributes
     in
     Ui.image tokenAttributes <| tokenImageDetails token
+
+
+viewBonus : Bonus -> Ui.Element Msg
+viewBonus bonus =
+    if bonus == Bonus then
+        Ui.image
+            [ Ui.width <| Ui.px 15
+            , Ui.height <| Ui.px 15
+            , Ui.moveUp 10
+            ]
+            { src = "images/bee.png", description = "Bee" }
+
+    else
+        Ui.none
+
+
+viewTokenCount : Token -> Ui.Element Msg
+viewTokenCount token =
+    case getTokenCount token of
+        Just count ->
+            Ui.el
+                [ Ui.width <| Ui.px 25
+                , Ui.height <| Ui.px 25
+                , Background.color <| Ui.rgb255 235 219 178
+                , Border.rounded 10
+                , Ui.alignBottom
+                , Ui.moveDown 5
+                , Ui.moveRight 5
+                , Ui.alignRight
+                ]
+            <|
+                Ui.el [ Ui.centerX, Ui.centerY, Font.size 16 ] <|
+                    Ui.text <|
+                        String.fromInt count
+
+        Nothing ->
+            Ui.none
+
+
+getTokenCount : Token -> Maybe Int
+getTokenCount token =
+    case token of
+        Growing1 count ->
+            Just count
+
+        Growing2 count ->
+            Just count
+
+        Growing3 count ->
+            Just count
+
+        Disappearing count ->
+            Just count
+
+        _ ->
+            Nothing
 
 
 tokenImageDetails : Token -> { src : String, description : String }
