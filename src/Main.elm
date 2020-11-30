@@ -28,6 +28,7 @@ main =
 type alias Model =
     { initialInt : Int
     , currentSeed : Random.Seed
+    , gameState : GameState
     , board : Board
     , score : Int
     , undoAllowed : Bool
@@ -35,6 +36,11 @@ type alias Model =
     , undoBoard : Board
     , undoScore : Int
     }
+
+
+type GameState
+    = Playing
+    | GameOver
 
 
 type alias Board =
@@ -123,6 +129,7 @@ init intFromDate =
     in
     ( { initialInt = intFromDate
       , currentSeed = queueSeed
+      , gameState = Playing
       , board = newBoard
       , score = 0
       , undoAllowed = False
@@ -276,30 +283,37 @@ update msg model =
 modelAfterPlaceToken : Model -> Coord -> Model
 modelAfterPlaceToken oldModel coord =
     let
-        ( newQueue, newQueueSeed ) =
-            Random.step (queueGenerator oldModel.score) oldModel.currentSeed
+        ( nextQueue, nextQueueSeed ) =
+            Random.step
+                (queueGenerator oldModel.score)
+                oldModel.currentSeed
+
+        newGrid =
+            placeTokenOnGrid oldModel.board.grid
+                (Tuple.first oldModel.board.queue)
+                coord
+
+        newQueue =
+            case oldModel.board.queue of
+                ( _, [ Harvester ] ) ->
+                    ( Harvester, nextQueue )
+
+                ( _, x :: xs ) ->
+                    ( x, xs )
+
+                _ ->
+                    oldModel.board.queue
+
+        newBoard =
+            { grid = newGrid, queue = newQueue }
     in
     { oldModel
-        | board =
-            { grid =
-                placeTokenOnGrid oldModel.board.grid
-                    (Tuple.first oldModel.board.queue)
-                    coord
-            , queue =
-                case oldModel.board.queue of
-                    ( _, [ Harvester ] ) ->
-                        ( Harvester, newQueue )
-
-                    ( _, x :: xs ) ->
-                        ( x, xs )
-
-                    _ ->
-                        oldModel.board.queue
-            }
+        | gameState = gameStateAfterPlacement newBoard
+        , board = newBoard
         , currentSeed =
             case oldModel.board.queue of
                 ( _, [ Harvester ] ) ->
-                    newQueueSeed
+                    nextQueueSeed
 
                 _ ->
                     oldModel.currentSeed
@@ -307,6 +321,22 @@ modelAfterPlaceToken oldModel coord =
         , undoSeed = oldModel.currentSeed
         , undoBoard = oldModel.board
     }
+
+
+gameStateAfterPlacement : Board -> GameState
+gameStateAfterPlacement board =
+    let
+        emptyCells =
+            List.filter (\cell -> cell.content == Nothing) board.grid
+
+        boardFull =
+            List.length emptyCells == 0
+    in
+    if boardFull then
+        GameOver
+
+    else
+        Playing
 
 
 modelAfterHarvest : Model -> Coord -> Model
@@ -546,17 +576,26 @@ view model =
         , Background.color <| Ui.rgb255 213 196 161
         ]
     <|
-        Ui.row [ Ui.spacing 100, Ui.centerX, Ui.centerY ]
-            [ Ui.column
-                [ Ui.spacing 15
-                , Ui.centerX
-                ]
-                [ viewGameInfo model
-                , viewQueue model.board.queue
-                , viewBoard model.board
-                , viewButtons model
-                ]
-            ]
+        case model.gameState of
+            Playing ->
+                viewPlaying model
+
+            GameOver ->
+                Ui.text <| "Game Over: " ++ String.fromInt model.score
+
+
+viewPlaying : Model -> Ui.Element Msg
+viewPlaying model =
+    Ui.column
+        [ Ui.spacing 15
+        , Ui.centerX
+        ]
+        [ viewGameInfo model
+        , viewQueue model.board.queue
+        , viewBoard model.board
+        , viewButtons model
+        , model.gameState |> Debug.toString |> Ui.text
+        ]
 
 
 viewGameInfo : Model -> Ui.Element Msg
