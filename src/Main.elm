@@ -332,7 +332,7 @@ gameStateAfterPlacement board =
         boardFull =
             List.length emptyCells == 0
     in
-    if boardFull then
+    if boardFull && Tuple.first board.queue /= Harvester then
         GameOver
 
     else
