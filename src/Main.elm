@@ -316,6 +316,7 @@ modelAfterHarvest oldModel coord =
             { grid =
                 clearHarvest oldModel.board.grid
                     (harvestFrom oldModel.board.grid coord |> List.map .coord)
+                    |> List.map growCell
             , queue =
                 case oldModel.board.queue of
                     ( Harvester, x :: xs ) ->
@@ -335,6 +336,54 @@ modelAfterHarvest oldModel coord =
         , undoBoard = oldModel.board
         , undoScore = oldModel.score
     }
+
+
+growCell : Cell -> Cell
+growCell cell =
+    { cell
+        | content =
+            case cell.content of
+                Just (Plant token bonus) ->
+                    if token == Disappearing 1 then
+                        Nothing
+
+                    else
+                        Just <| Plant (growToken token) bonus
+
+                _ ->
+                    Nothing
+    }
+
+
+growToken : Token -> Token
+growToken token =
+    case token of
+        Growing1 untilGrowth ->
+            if untilGrowth > 1 then
+                Growing1 (untilGrowth - 1)
+
+            else
+                Grown1
+
+        Growing2 untilGrowth ->
+            if untilGrowth > 1 then
+                Growing2 (untilGrowth - 1)
+
+            else
+                Grown2
+
+        Growing3 untilGrowth ->
+            if untilGrowth > 1 then
+                Growing3 (untilGrowth - 1)
+
+            else
+                Grown3
+
+        Disappearing untilGone ->
+            Disappearing (untilGone - 1)
+
+        _ ->
+            token
 
 
 clearHarvest : Grid -> List Coord -> Grid
