@@ -39,7 +39,7 @@ type alias Model =
 
 type alias Board =
     { grid : Grid
-    , queue : List Content
+    , queue : ( Content, List Content )
     }
 
 
@@ -110,8 +110,16 @@ init intFromDate =
         ( queue, queueSeed ) =
             Random.step (queueGenerator 0) gridSeed
 
+        queueHead =
+            List.head queue |> Maybe.withDefault Harvester
+
+        queueTail =
+            List.tail queue |> Maybe.withDefault []
+
         newBoard =
-            { grid = grid, queue = queue ++ [ Harvester ] }
+            { grid = grid
+            , queue = ( queueHead, queueTail ++ [ Harvester ] )
+            }
     in
     ( { initialInt = intFromDate
       , currentSeed = queueSeed
@@ -119,7 +127,7 @@ init intFromDate =
       , score = 0
       , undoAllowed = False
       , undoSeed = queueSeed
-      , undoBoard = { grid = [], queue = [] }
+      , undoBoard = { grid = [], queue = ( Harvester, [] ) }
       , undoScore = 0
       }
     , Cmd.none
@@ -275,22 +283,22 @@ modelAfterPlaceToken oldModel coord =
         | board =
             { grid =
                 placeTokenOnGrid oldModel.board.grid
-                    (List.head oldModel.board.queue |> Maybe.withDefault Harvester)
+                    (Tuple.first oldModel.board.queue)
                     coord
             , queue =
                 case oldModel.board.queue of
-                    [ _, h ] ->
-                        h :: newQueue
+                    ( _, [ Harvester ] ) ->
+                        ( Harvester, newQueue )
 
-                    _ :: qs ->
-                        qs
+                    ( _, x :: xs ) ->
+                        ( x, xs )
 
                     _ ->
                         oldModel.board.queue
             }
         , currentSeed =
             case oldModel.board.queue of
-                [ _, _ ] ->
+                ( _, [ Harvester ] ) ->
                     newQueueSeed
 
                 _ ->
@@ -310,8 +318,8 @@ modelAfterHarvest oldModel coord =
                     (harvestFrom oldModel.board.grid coord |> List.map .coord)
             , queue =
                 case oldModel.board.queue of
-                    Harvester :: rest ->
-                        rest ++ [ Harvester ]
+                    ( Harvester, x :: xs ) ->
+                        ( x, xs ++ [ Harvester ] )
 
                     _ ->
                         oldModel.board.queue
@@ -529,24 +537,22 @@ viewScore score =
         |> Ui.el [ Font.size 36 ]
 
 
-viewQueue : List Content -> Ui.Element Msg
-viewQueue queue =
-    (queue
-        |> List.head
-        |> Maybe.withDefault Harvester
-        |> viewQueueCell
-        |> Ui.el
-            [ Background.color <| Ui.rgb255 235 219 178
-            , Ui.height <| Ui.px 100
-            , Border.rounded 15
-            ]
-    )
-        :: (queue
-                |> List.tail
-                |> Maybe.withDefault []
-                |> List.map viewQueueCell
-           )
-        |> Ui.row [ Ui.height <| Ui.px 100 ]
+viewQueue : ( Content, List Content ) -> Ui.Element Msg
+viewQueue ( head, rest ) =
+    let
+        viewQueueHead =
+            Ui.el
+                [ Background.color <| Ui.rgb255 235 219 178
+                , Ui.height <| Ui.px 100
+                , Border.rounded 15
+                ]
+            <|
+                viewQueueCell head
+
+        viewQueueRest =
+            List.map viewQueueCell rest
+    in
+    Ui.row [ Ui.height <| Ui.px 100 ] <| viewQueueHead :: viewQueueRest
 
 
 viewQueueCell : Content -> Ui.Element Msg
@@ -618,11 +624,11 @@ cellAttrColours grid cell =
     ]
 
 
-cellAttrOnClick : List Content -> Cell -> Ui.Attribute Msg
-cellAttrOnClick queue cell =
+cellAttrOnClick : ( Content, List Content ) -> Cell -> Ui.Attribute Msg
+cellAttrOnClick ( head, _ ) cell =
     Events.onClick <|
-        case ( List.head queue, cell.content ) of
-            ( Just Harvester, Just (Plant token _) ) ->
+        case ( head, cell.content ) of
+            ( Harvester, Just (Plant token _) ) ->
                 case token of
                     Growing1 _ ->
                         NoOp
@@ -636,7 +642,7 @@ cellAttrOnClick queue cell =
                     _ ->
                         Harvest cell.coord
 
-            ( Just (Plant _ _), Nothing ) ->
+            ( Plant _ _, Nothing ) ->
                 PlaceTokenOnBoard cell.coord
 
             _ ->
