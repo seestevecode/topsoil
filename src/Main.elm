@@ -548,12 +548,22 @@ harvestMatchCells cellA cellB =
         contentMatch =
             case ( cellA.content, cellB.content ) of
                 ( Just (Plant tokenA _), Just (Plant tokenB _) ) ->
-                    tokenA == tokenB
+                    harvestMatchTokens tokenA tokenB
 
                 _ ->
                     False
     in
     baseMatch && contentMatch
+
+
+harvestMatchTokens : Token -> Token -> Bool
+harvestMatchTokens tokenA tokenB =
+    case ( tokenA, tokenB ) of
+        ( Disappearing _, Disappearing _ ) ->
+            True
+
+        ( _, _ ) ->
+            tokenA == tokenB
 
 
 placeTokenOnGrid : Grid -> Content -> Coord -> Grid
