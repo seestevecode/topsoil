@@ -439,9 +439,31 @@ scoreHarvest cells =
                 |> List.filterMap identity
                 |> List.filter (\bonus -> bonus == Bonus)
                 |> List.length
+
+        harvestToken =
+            cells
+                |> List.head
+                |> Maybe.withDefault
+                    { base = Base1, coord = ( 0, 0 ), content = Nothing }
+                |> getTokenFromCell
+                |> Maybe.withDefault Standard1
+
+        tokenMultiplier =
+            tokenDetails harvestToken |> .baseScore |> Maybe.withDefault 0
     in
-    List.indexedMap (\index _ -> index + bonusCount + 1) cells
+    List.indexedMap (\index _ -> (index + bonusCount + 1) * tokenMultiplier)
+        cells
         |> List.sum
+
+
+getTokenFromCell : Cell -> Maybe Token
+getTokenFromCell cell =
+    case cell.content of
+        Just (Plant token _) ->
+            Just token
+
+        _ ->
+            Nothing
 
 
 getBonusFromContent : Content -> Maybe Bonus
@@ -983,38 +1005,38 @@ tokenImageDetails token =
     { src = "images/" ++ imageName ++ ".png", description = description }
 
 
-tokenDetails : Token -> { image : String, name : String }
+tokenDetails : Token -> { image : String, name : String, baseScore : Maybe Int }
 tokenDetails token =
     case token of
         Standard1 ->
-            { image = "high-grass", name = "Grass" }
+            { image = "high-grass", name = "Grass", baseScore = Just 1 }
 
         Standard2 ->
-            { image = "daisy", name = "Daisy" }
+            { image = "daisy", name = "Daisy", baseScore = Just 1 }
 
         Standard3 ->
-            { image = "spoted-flower", name = "Spotted flower" }
+            { image = "spoted-flower", name = "Spotted flower", baseScore = Just 1 }
 
         Growing1 _ ->
-            { image = "sesame", name = "Seeds" }
+            { image = "sesame", name = "Seeds", baseScore = Nothing }
 
         Growing2 _ ->
-            { image = "bud", name = "Bud" }
+            { image = "bud", name = "Bud", baseScore = Nothing }
 
         Growing3 _ ->
-            { image = "bulb", name = "Bulb" }
+            { image = "bulb", name = "Bulb", baseScore = Nothing }
 
         Grown1 ->
-            { image = "sunflower", name = "Sunflower" }
+            { image = "sunflower", name = "Sunflower", baseScore = Just 3 }
 
         Grown2 ->
-            { image = "rose", name = "Rose" }
+            { image = "rose", name = "Rose", baseScore = Just 6 }
 
         Grown3 ->
-            { image = "viola", name = "Viola" }
+            { image = "viola", name = "Viola", baseScore = Just 15 }
 
         Disappearing _ ->
-            { image = "dandelion-flower", name = "Dandelion" }
+            { image = "dandelion-flower", name = "Dandelion", baseScore = Just 2 }
 
 
 sharedAttributes : List (Ui.Attribute Msg)
