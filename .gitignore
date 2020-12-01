@@ -2,5 +2,3 @@
 elm-stuff
 # elm-repl generated files
 repl-temp-*
-# compiled JS file
-app.js
