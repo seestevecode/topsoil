@@ -521,7 +521,10 @@ harvestStep grid harvestInfo =
                 | toCheck =
                     Set.diff harvestInfo.toCheck checkedCoordSet
                         |> Set.union
-                            (Set.diff (Set.fromList matches) harvestInfo.checked)
+                            (Set.diff
+                                (Set.fromList matches)
+                                harvestInfo.checked
+                            )
                 , toHarvest =
                     Set.union harvestInfo.toHarvest (Set.fromList matches)
                 , checked =
@@ -735,12 +738,11 @@ viewQueue ( head, rest ) =
 
 viewQueueCell : Content -> Ui.Element Msg
 viewQueueCell content =
-    Ui.el [ Ui.width <| Ui.px 100, Ui.centerY ] <|
-        viewContent content
+    Ui.el [ Ui.width <| Ui.px 100, Ui.centerY ] <| viewContent content
 
 
-viewBoard : Board -> Ui.Element Msg
-viewBoard board =
+viewGrid : Board -> Ui.Element Msg
+viewGrid board =
     let
         viewRow y =
             getRow y board.grid
@@ -760,12 +762,12 @@ viewCell board cell =
     Ui.el [ Ui.width <| Ui.px 100, Ui.height <| Ui.px 100 ] <|
         Ui.el
             ([ Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
-             , cellAttrOnClick board.queue cell
-             , cellAttrCorners board.grid cell
+             , cellOnClickAtts board.queue cell
+             , cellCornerAtts board.grid cell
              ]
-                ++ cellAttrHorizontalAlign board.grid cell
-                ++ cellAttrVerticalAlign board.grid cell
-                ++ cellAttrColours board.grid cell
+                ++ cellHorizontalAtts board.grid cell
+                ++ cellVerticalAtts board.grid cell
+                ++ cellColourAtts board.grid cell
             )
         <|
             Ui.el [ Ui.centerX, Ui.centerY ] <|
@@ -777,14 +779,14 @@ viewCell board cell =
                         Ui.none
 
 
-cellAttrColours : Grid -> Cell -> List (Ui.Attribute Msg)
-cellAttrColours grid cell =
+cellColourAtts : Grid -> Cell -> List (Ui.Attribute Msg)
+cellColourAtts grid cell =
     let
-        altCell =
-            modBy 2 (Tuple.first cell.coord + Tuple.second cell.coord) == 1
-
         colourFn =
-            if altCell then
+            if
+                modBy 2 (Tuple.first cell.coord + Tuple.second cell.coord)
+                    == 1
+            then
                 baseColour
 
             else
@@ -802,8 +804,8 @@ cellAttrColours grid cell =
     ]
 
 
-cellAttrOnClick : ( Content, List Content ) -> Cell -> Ui.Attribute Msg
-cellAttrOnClick ( head, _ ) cell =
+cellOnClickAtts : ( Content, List Content ) -> Cell -> Ui.Attribute Msg
+cellOnClickAtts ( head, _ ) cell =
     Events.onClick <|
         case ( head, cell.content ) of
             ( Harvester, Just (Plant token _) ) ->
@@ -827,8 +829,8 @@ cellAttrOnClick ( head, _ ) cell =
                 NoOp
 
 
-cellAttrVerticalAlign : Grid -> Cell -> List (Ui.Attribute Msg)
-cellAttrVerticalAlign grid cell =
+cellVerticalAtts : Grid -> Cell -> List (Ui.Attribute Msg)
+cellVerticalAtts grid cell =
     case ( flushTo grid cell Above, flushTo grid cell Below ) of
         ( True, True ) ->
             [ Ui.height <| Ui.px 100 ]
@@ -843,8 +845,8 @@ cellAttrVerticalAlign grid cell =
             [ Ui.height <| Ui.px 96, Ui.centerY ]
 
 
-cellAttrHorizontalAlign : Grid -> Cell -> List (Ui.Attribute Msg)
-cellAttrHorizontalAlign grid cell =
+cellHorizontalAtts : Grid -> Cell -> List (Ui.Attribute Msg)
+cellHorizontalAtts grid cell =
     case ( flushTo grid cell Right, flushTo grid cell Left ) of
         ( True, True ) ->
             [ Ui.width <| Ui.px 100 ]
@@ -865,8 +867,8 @@ flushTo grid cell direction =
         || (neighbourBase grid cell.coord direction == Nothing)
 
 
-cellAttrCorners : Grid -> Cell -> Ui.Attribute Msg
-cellAttrCorners grid cell =
+cellCornerAtts : Grid -> Cell -> Ui.Attribute Msg
+cellCornerAtts grid cell =
     let
         round match =
             if match == True then
@@ -1026,7 +1028,10 @@ viewTokenCount token =
     in
     case getTokenCount token of
         Just count ->
-            Ui.el outerAtts <| Ui.el innerAtts <| Ui.text <| String.fromInt count
+            Ui.el outerAtts <|
+                Ui.el innerAtts <|
+                    Ui.text <|
+                        String.fromInt count
 
         Nothing ->
             Ui.none
@@ -1063,7 +1068,13 @@ tokenImageDetails token =
     { src = "images/" ++ imageName ++ ".png", description = description }
 
 
-tokenDetails : Token -> { image : String, name : String, baseScore : Maybe Int }
+tokenDetails :
+    Token
+    ->
+        { image : String
+        , name : String
+        , baseScore : Maybe Int
+        }
 tokenDetails token =
     case token of
         Standard1 ->
@@ -1073,7 +1084,10 @@ tokenDetails token =
             { image = "daisy", name = "Daisy", baseScore = Just 1 }
 
         Standard3 ->
-            { image = "spoted-flower", name = "Spotted flower", baseScore = Just 1 }
+            { image = "spoted-flower"
+            , name = "Spotted flower"
+            , baseScore = Just 1
+            }
 
         Growing1 _ ->
             { image = "sesame", name = "Seeds", baseScore = Nothing }
@@ -1094,7 +1108,10 @@ tokenDetails token =
             { image = "viola", name = "Viola", baseScore = Just 15 }
 
         Disappearing _ ->
-            { image = "dandelion-flower", name = "Dandelion", baseScore = Just 2 }
+            { image = "dandelion-flower"
+            , name = "Dandelion"
+            , baseScore = Just 2
+            }
 
 
 sharedAttributes : List (Ui.Attribute Msg)
