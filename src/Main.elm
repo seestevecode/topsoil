@@ -603,58 +603,116 @@ placeTokenOnGrid oldGrid newContent targetCoord =
 
 view : Model -> Html Msg
 view model =
-    Ui.layout
-        [ Ui.padding 15
-        , Background.color <| Ui.rgb255 213 196 161
-        ]
-    <|
+    Ui.layout [ Ui.padding 25, Background.color <| Ui.rgb255 213 196 161 ] <|
+        Ui.column
+            [ Ui.width <| Ui.px 400
+            , Ui.height Ui.fill
+            , Ui.spaceEvenly
+            , Ui.centerX
+            ]
+            [ viewHeader model, viewBody model, viewFooter model ]
+
+
+viewHeader : Model -> Ui.Element Msg
+viewHeader model =
+    Ui.row [ Ui.width Ui.fill, Ui.height <| Ui.px 50, Ui.spaceEvenly ] <|
         case model.gameState of
             Playing ->
-                viewPlaying model
+                [ Ui.el
+                    [ Ui.below <|
+                        Ui.el [ Ui.moveDown 10, Font.size 15 ] <|
+                            viewGameId model.initialInt
+                    ]
+                  <|
+                    viewTitle
+                , Ui.el [ Font.size 48, Font.bold, Ui.moveDown 15 ] <|
+                    viewScore model.score
+                ]
 
             GameOver ->
-                Ui.text <| "Game Over: " ++ String.fromInt model.score
+                [ viewTitle ]
 
 
-viewPlaying : Model -> Ui.Element Msg
-viewPlaying model =
-    Ui.column
-        [ Ui.spacing 15
-        , Ui.centerX
+viewBody : Model -> Ui.Element Msg
+viewBody model =
+    Ui.column [ Ui.width Ui.fill, Ui.spacing 10 ]
+        [ viewQueue model.board.queue
+        , Ui.el
+            [ Ui.inFront <|
+                case model.gameState of
+                    Playing ->
+                        Ui.none
+
+                    GameOver ->
+                        viewGameOverOverlay model
+            ]
+          <|
+            viewGrid model.board
         ]
-        [ viewGameInfo model
-        , viewQueue model.board.queue
-        , viewBoard model.board
-        , viewButtons model
-        , model.gameState |> Debug.toString |> Ui.text
+
+
+viewGameOverOverlay : Model -> Ui.Element Msg
+viewGameOverOverlay model =
+    Ui.el
+        [ Background.color <| Ui.rgba255 213 196 161 0.9
+        , Ui.width Ui.fill
+        , Ui.height Ui.fill
+        ]
+    <|
+        Ui.column [ Ui.centerX, Ui.centerY, Ui.spacing 25 ]
+            [ Ui.el [ Ui.centerX, Font.size 30, Font.bold ] <|
+                Ui.text "Game Over"
+            , Ui.el [ Ui.centerX, Font.size 20 ] <| viewGameId model.initialInt
+            , Ui.el [ Ui.centerX, Font.size 60, Font.bold ] <|
+                viewScore model.score
+            ]
+
+
+viewFooter : Model -> Ui.Element Msg
+viewFooter model =
+    Ui.row [ Ui.width Ui.fill, Ui.height <| Ui.px 50 ]
+        [ case model.gameState of
+            Playing ->
+                viewUndoButton model.undoAllowed
+
+            GameOver ->
+                Ui.el [ Ui.width <| Ui.px 100, Ui.height Ui.fill ] <| Ui.none
+        , Ui.column
+            [ Ui.width <| Ui.px 200, Ui.height Ui.fill, Ui.spaceEvenly ]
+            [ Ui.paragraph [ Font.center, Font.size 15, Ui.centerY ]
+                [ Ui.text "seestevecode", Ui.text " - ", Ui.text "source" ]
+            ]
+        , viewMenuButton
         ]
 
 
-viewGameInfo : Model -> Ui.Element Msg
-viewGameInfo model =
-    Ui.row
-        [ Ui.width Ui.fill
-        , Ui.spaceEvenly
+viewTitle : Ui.Element Msg
+viewTitle =
+    Ui.el [ Font.bold, Font.size 24 ] <| Ui.text "Topsoil"
+
+
+viewMenuButton : Ui.Element Msg
+viewMenuButton =
+    Input.button
+        [ Background.color <| Ui.rgb255 168 153 132
         , Ui.height <| Ui.px 50
-        , Font.family <| [ Font.typeface "Source Code Pro" ]
+        , Ui.width <| Ui.px 100
+        , Ui.padding 10
+        , Border.rounded 5
         ]
-        [ viewGameId model.initialInt, viewScore model.score ]
-
-
-viewGameId : Int -> Ui.Element Msg
-viewGameId id =
-    Ui.column []
-        [ Ui.el [ Font.size 12 ] <| Ui.text "Game Id: "
-        , Ui.el [ Font.size 24 ] <| Ui.text <| idFromInt id
-        ]
+        { onPress = Just NoOp
+        , label = Ui.el [ Ui.centerX, Ui.centerY ] <| Ui.text "Menu"
+        }
 
 
 viewScore : Int -> Ui.Element Msg
 viewScore score =
-    score
-        |> String.fromInt
-        |> Ui.text
-        |> Ui.el [ Font.size 36 ]
+    Ui.text <| String.fromInt score
+
+
+viewGameId : Int -> Ui.Element Msg
+viewGameId id =
+    Ui.text <| idFromInt id
 
 
 viewQueue : ( Content, List Content ) -> Ui.Element Msg
@@ -1047,24 +1105,22 @@ sharedAttributes =
     ]
 
 
-viewButtons : Model -> Ui.Element Msg
-viewButtons model =
-    Ui.row [ Ui.height <| Ui.px 50 ] <|
-        [ if model.undoAllowed then
-            Input.button
-                [ Background.color <| Ui.rgb255 168 153 132
-                , Ui.height <| Ui.px 50
-                , Ui.width <| Ui.px 100
-                , Ui.padding 10
-                , Border.rounded 5
-                ]
-                { onPress = Just Undo
-                , label = Ui.el [ Ui.centerX, Ui.centerY ] <| Ui.text "Undo"
-                }
+viewUndoButton : Bool -> Ui.Element Msg
+viewUndoButton undoAllowed =
+    if undoAllowed then
+        Input.button
+            [ Background.color <| Ui.rgb255 168 153 132
+            , Ui.height <| Ui.px 50
+            , Ui.width <| Ui.px 100
+            , Ui.padding 10
+            , Border.rounded 5
+            ]
+            { onPress = Just Undo
+            , label = Ui.el [ Ui.centerX, Ui.centerY ] <| Ui.text "Undo"
+            }
 
-          else
-            Ui.none
-        ]
+    else
+        Ui.el [ Ui.width <| Ui.px 100 ] <| Ui.none
 
 
 idFromInt : Int -> String
