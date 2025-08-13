@@ -15,6 +15,7 @@ import List.Extra as ListX
 import Random
 import Set exposing (Set)
 import Simplex
+import UI.Colours as Colours
 
 
 main : Program Int Model Msg
@@ -477,7 +478,7 @@ placeTokenOnGrid oldGrid newContent targetCoord =
 
 view : Model -> Html Msg
 view model =
-    Ui.layout [ Ui.padding 25, Background.color <| Ui.rgb255 213 196 161 ] <|
+    Ui.layout [ Ui.padding 25, Background.color Colours.mainBackground ] <|
         Ui.column
             [ Ui.width <| Ui.px 400
             , Ui.height Ui.fill
@@ -528,7 +529,7 @@ viewBody model =
 viewGameOverOverlay : Model -> Ui.Element Msg
 viewGameOverOverlay model =
     Ui.el
-        [ Background.color <| Ui.rgba255 213 196 161 0.9
+        [ Background.color Colours.endGameOverlay
         , Ui.width Ui.fill
         , Ui.height Ui.fill
         ]
@@ -568,7 +569,7 @@ viewTitle =
 viewMenuButton : Ui.Element Msg
 viewMenuButton =
     Input.button
-        [ Background.color <| Ui.rgb255 168 153 132
+        [ Background.color Colours.buttonBackground
         , Ui.height <| Ui.px 50
         , Ui.width <| Ui.px 100
         , Ui.padding 10
@@ -594,7 +595,7 @@ viewQueue ( head, rest ) =
     let
         viewQueueHead =
             Ui.el
-                [ Background.color <| Ui.rgb255 235 219 178
+                [ Background.color Colours.queueHeadBackground
                 , Ui.height <| Ui.px 100
                 , Border.rounded 15
                 ]
@@ -800,26 +801,26 @@ baseColour : Base -> Ui.Color
 baseColour base =
     case base of
         Base1 ->
-            Ui.rgb255 215 153 33
+            Colours.mainBgBase1
 
         Base2 ->
-            Ui.rgb255 152 151 26
+            Colours.mainBgBase2
 
         Base3 ->
-            Ui.rgb255 69 133 136
+            Colours.mainBgBase3
 
 
 altBaseColour : Base -> Ui.Color
 altBaseColour base =
     case base of
         Base1 ->
-            Ui.rgb255 207 149 32
+            Colours.altBgBase1
 
         Base2 ->
-            Ui.rgb255 144 144 24
+            Colours.altBgBase2
 
         Base3 ->
-            Ui.rgb255 65 126 126
+            Colours.altBgBase3
 
 
 nextBase : Base -> Base
@@ -878,10 +879,10 @@ viewTokenCount token =
         ( bgColour, fontColour ) =
             case token of
                 Disappearing _ ->
-                    ( Ui.rgba255 0 0 0 0.8, Ui.rgb255 235 219 178 )
+                    ( Colours.tokenDisappearingBg, Colours.tokenDisappearingFont )
 
                 _ ->
-                    ( Ui.rgba255 235 219 178 0.8, Ui.rgb255 0 0 0 )
+                    ( Colours.tokenMainBg, Colours.tokenMainFont )
 
         outerAtts =
             [ Ui.width <| Ui.px 25
@@ -997,7 +998,7 @@ viewUndoButton : Bool -> Ui.Element Msg
 viewUndoButton undoAllowed =
     if undoAllowed then
         Input.button
-            [ Background.color <| Ui.rgb255 168 153 132
+            [ Background.color <| Colours.buttonBackground
             , Ui.height <| Ui.px 50
             , Ui.width <| Ui.px 100
             , Ui.padding 10
