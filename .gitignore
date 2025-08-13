@@ -1,6 +1,5 @@
-elm-stuff
-session.lock
-site/
-dist/
-repl-temp-*
+/elm-stuff/
+/site/
+/dist/
 /app.js
+/session.lock
