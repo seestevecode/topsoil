@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Domain.Constants as Const
 import Domain.Types exposing (..)
 import Element as Ui
 import Element.Background as Background
@@ -87,8 +88,8 @@ initGrid initInt =
             Random.initialSeed initInt
 
         initBases =
-            List.map2 Tuple.pair coords <|
-                List.map (baseFromCoord initInt) coords
+            List.map2 Tuple.pair Const.coords <|
+                List.map (baseFromCoord initInt) Const.coords
 
         ( initCoords, coordSeed ) =
             Random.step initCoordsGenerator initSeed
@@ -113,26 +114,12 @@ initGrid initInt =
     )
 
 
-coords : List Coord
-coords =
-    ListX.lift2 Tuple.pair axis axis
-
-
-axis : List Int
-axis =
-    List.range 0 3
-
-
 baseFromCoord : Int -> Coord -> Base
 baseFromCoord initInt ( x, y ) =
-    let
-        scale =
-            0.15
-    in
     Simplex.noise2d
         (Simplex.permutationTableFromInt initInt)
-        (toFloat x * scale)
-        (toFloat y * scale)
+        (toFloat x * Const.terrainScale)
+        (toFloat y * Const.terrainScale)
         |> (\float ->
                 if float < -(1 / 3) then
                     Base1
@@ -147,17 +134,17 @@ baseFromCoord initInt ( x, y ) =
 
 queueGenerator : Int -> Random.Generator (List Content)
 queueGenerator score =
-    Random.list 3 (contentGenerator score)
+    Random.list Const.queueSize (contentGenerator score)
 
 
 initCoordsGenerator : Random.Generator (List Coord)
 initCoordsGenerator =
-    Random.map (List.take 6) <| Random.List.shuffle coords
+    Random.map (List.take Const.initialTokenCount) <| Random.List.shuffle Const.coords
 
 
 initTokensGenerator : Int -> Random.Generator (List Content)
 initTokensGenerator score =
-    Random.list 6 (contentGenerator score)
+    Random.list Const.initialTokenCount (contentGenerator score)
 
 
 contentGenerator : Int -> Random.Generator Content
@@ -167,16 +154,16 @@ contentGenerator score =
 
 tokenGenerator : Int -> Random.Generator Token
 tokenGenerator score =
-    if score < 20 then
+    if score < Const.tokenThresholdTake2 then
         Random.uniform Standard1 <| List.take 2 nextTokens
 
-    else if score < 50 then
+    else if score < Const.tokenThresholdTake3 then
         Random.uniform Standard1 <| List.take 3 nextTokens
 
-    else if score < 80 then
+    else if score < Const.tokenThresholdTake4 then
         Random.uniform Standard1 <| List.take 4 nextTokens
 
-    else if score < 100 then
+    else if score < Const.tokenThresholdTake5 then
         Random.uniform Standard1 <| List.take 5 nextTokens
 
     else
@@ -190,7 +177,7 @@ nextTokens =
 
 bonusGenerator : Random.Generator Bonus
 bonusGenerator =
-    Random.weighted ( 20, Bonus ) [ ( 80, NoBonus ) ]
+    Random.weighted ( Const.bonusWeightYes, Bonus ) [ ( Const.bonusWeightNo, NoBonus ) ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -681,7 +668,7 @@ viewGrid board =
                 |> List.map (viewCell board)
                 |> Ui.row [ Ui.spacing 0 ]
     in
-    axis |> List.map viewRow |> Ui.column [ Ui.spacing 0 ]
+    Const.axis |> List.map viewRow |> Ui.column [ Ui.spacing 0 ]
 
 
 getRow : Int -> Grid -> List Cell
