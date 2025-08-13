@@ -2,5 +2,5 @@ elm-stuff
 session.lock
 site/
 dist/
-app.js
 repl-temp-*
+/app.js
