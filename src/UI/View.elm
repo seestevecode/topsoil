@@ -13,6 +13,7 @@ import Game.Board as Board
 import Html exposing (Html)
 import List.Extra as ListX
 import UI.Colours as Colours
+import UI.Layout as Layout
 
 
 
@@ -21,9 +22,9 @@ import UI.Colours as Colours
 
 viewLayout : { a | undoAllowed : Bool, board : Board, gameState : GameState, initialInt : Int, score : Int } -> Html M.Msg
 viewLayout props =
-    Ui.layout [ Ui.padding 25, Background.color Colours.mainBackground ] <|
+    Ui.layout [ Ui.padding Layout.layout.padding, Background.color Colours.mainBackground ] <|
         Ui.column
-            [ Ui.width <| Ui.px 400
+            [ Ui.width <| Ui.px Layout.layout.width
             , Ui.height Ui.fill
             , Ui.spaceEvenly
             , Ui.centerX
@@ -33,7 +34,7 @@ viewLayout props =
 
 viewBody : { a | board : Board, gameState : GameState, initialInt : Int, score : Int } -> Ui.Element M.Msg
 viewBody props =
-    Ui.column [ Ui.width Ui.fill, Ui.spacing 10 ]
+    Ui.column [ Ui.width Ui.fill, Ui.spacing Layout.body.columnSpacing ]
         [ viewQueue props.board.queue
         , Ui.el
             [ Ui.inFront <|
@@ -51,16 +52,16 @@ viewBody props =
 
 viewFooter : { a | gameState : GameState, undoAllowed : Bool } -> Ui.Element M.Msg
 viewFooter props =
-    Ui.row [ Ui.width Ui.fill, Ui.height <| Ui.px 50 ]
+    Ui.row [ Ui.width Ui.fill, Ui.height <| Ui.px Layout.footer.rowHeight ]
         [ case props.gameState of
             Playing ->
                 viewUndoButton props.undoAllowed
 
             GameOver ->
-                Ui.el [ Ui.width <| Ui.px 100, Ui.height Ui.fill ] <| Ui.none
+                Ui.el [ Ui.width <| Ui.px Layout.footer.lhsEndGameWidth, Ui.height Ui.fill ] <| Ui.none
         , Ui.column
-            [ Ui.width <| Ui.px 200, Ui.height Ui.fill, Ui.spaceEvenly ]
-            [ Ui.paragraph [ Font.center, Font.size 15, Ui.centerY ]
+            [ Ui.width <| Ui.px Layout.footer.rhsColumnWidth, Ui.height Ui.fill, Ui.spaceEvenly ]
+            [ Ui.paragraph [ Font.center, Font.size Layout.footer.rhsFontSize, Ui.centerY ]
                 [ Ui.text "seestevecode", Ui.text " - ", Ui.text "source" ]
             ]
         , viewMenuButton
@@ -73,9 +74,9 @@ viewGrid board =
         viewRow y =
             Board.getRow y board.grid
                 |> List.map (viewCell board)
-                |> Ui.row [ Ui.spacing 0 ]
+                |> Ui.row [ Ui.spacing Layout.grid.rowSpacing ]
     in
-    Const.axis |> List.map viewRow |> Ui.column [ Ui.spacing 0 ]
+    Const.axis |> List.map viewRow |> Ui.column [ Ui.spacing Layout.grid.colSpacing ]
 
 
 viewUndoButton : Bool -> Ui.Element M.Msg
@@ -83,24 +84,29 @@ viewUndoButton undoAllowed =
     if undoAllowed then
         Input.button
             [ Background.color <| Colours.buttonBackground
-            , Ui.height <| Ui.px 50
-            , Ui.width <| Ui.px 100
-            , Ui.padding 10
-            , Border.rounded 5
+            , Ui.height <| Ui.px Layout.undoBtn.height
+            , Ui.width <| Ui.px Layout.undoBtn.width
+            , Ui.padding Layout.undoBtn.padding
+            , Border.rounded Layout.undoBtn.borderRound
             ]
             { onPress = Just M.Undo
             , label = Ui.el [ Ui.centerX, Ui.centerY ] <| Ui.text "Undo"
             }
 
     else
-        Ui.el [ Ui.width <| Ui.px 100 ] <| Ui.none
+        Ui.el [ Ui.width <| Ui.px Layout.undoBtn.width ] <| Ui.none
 
 
 viewCell : Board -> Cell -> Ui.Element M.Msg
 viewCell board cell =
-    Ui.el [ Ui.width <| Ui.px 100, Ui.height <| Ui.px 100 ] <|
+    Ui.el [ Ui.width <| Ui.px Layout.cell.width.full, Ui.height <| Ui.px Layout.cell.height.full ] <|
         Ui.el
-            ([ Border.widthEach { bottom = 10, top = 0, right = 0, left = 0 }
+            ([ Border.widthEach
+                { bottom = Layout.cell.borderWidth.bottom
+                , top = Layout.cell.borderWidth.top
+                , right = Layout.cell.borderWidth.right
+                , left = Layout.cell.borderWidth.left
+                }
              , cellOnClickAtts board.queue cell
              , cellCornerAtts board.grid cell
              ]
@@ -122,10 +128,10 @@ viewMenuButton : Ui.Element M.Msg
 viewMenuButton =
     Input.button
         [ Background.color Colours.buttonBackground
-        , Ui.height <| Ui.px 50
-        , Ui.width <| Ui.px 100
-        , Ui.padding 10
-        , Border.rounded 5
+        , Ui.height <| Ui.px Layout.menuBtn.height
+        , Ui.width <| Ui.px Layout.menuBtn.width
+        , Ui.padding Layout.menuBtn.padding
+        , Border.rounded Layout.menuBtn.borderRound
         ]
         { onPress = Just M.NoOp
         , label = Ui.el [ Ui.centerX, Ui.centerY ] <| Ui.text "Menu"
@@ -138,17 +144,17 @@ viewMenuButton =
 
 viewHeader : { a | gameState : GameState, initialInt : Int, score : Int } -> Ui.Element msg
 viewHeader props =
-    Ui.row [ Ui.width Ui.fill, Ui.height <| Ui.px 50, Ui.spaceEvenly ] <|
+    Ui.row [ Ui.width Ui.fill, Ui.height <| Ui.px Layout.header.height, Ui.spaceEvenly ] <|
         case props.gameState of
             Playing ->
                 [ Ui.el
                     [ Ui.below <|
-                        Ui.el [ Ui.moveDown 10, Font.size 15 ] <|
+                        Ui.el [ Ui.moveDown Layout.header.gameId.moveDown, Font.size Layout.header.gameId.fontSize ] <|
                             viewGameId props.initialInt
                     ]
                   <|
                     viewTitle
-                , Ui.el [ Font.size 48, Font.bold, Ui.moveDown 15 ] <|
+                , Ui.el [ Font.size Layout.header.score.fontSize, Font.bold, Ui.moveDown Layout.header.score.moveDown ] <|
                     viewScore props.score
                 ]
 
@@ -158,7 +164,7 @@ viewHeader props =
 
 viewTitle : Ui.Element msg
 viewTitle =
-    Ui.el [ Font.bold, Font.size 24 ] <| Ui.text "Topsoil"
+    Ui.el [ Font.bold, Font.size Layout.title.fontSize ] <| Ui.text "Topsoil"
 
 
 viewGameId : Int -> Ui.Element msg
@@ -184,8 +190,8 @@ viewQueue ( head, rest ) =
         viewQueueHead =
             Ui.el
                 [ Background.color Colours.queueHeadBackground
-                , Ui.height <| Ui.px 100
-                , Border.rounded 15
+                , Ui.height <| Ui.px Layout.queue.head.height
+                , Border.rounded Layout.queue.head.borderRound
                 ]
             <|
                 viewQueueCell head
@@ -193,7 +199,7 @@ viewQueue ( head, rest ) =
         viewQueueRest =
             List.map viewQueueCell rest
     in
-    Ui.row [ Ui.height <| Ui.px 100 ] <| viewQueueHead :: viewQueueRest
+    Ui.row [ Ui.height <| Ui.px Layout.queue.row.height ] <| viewQueueHead :: viewQueueRest
 
 
 viewEndGameOverlay : { a | initialInt : Int, score : Int } -> Ui.Element msg
@@ -204,18 +210,18 @@ viewEndGameOverlay props =
         , Ui.height Ui.fill
         ]
     <|
-        Ui.column [ Ui.centerX, Ui.centerY, Ui.spacing 25 ]
-            [ Ui.el [ Ui.centerX, Font.size 30, Font.bold ] <|
+        Ui.column [ Ui.centerX, Ui.centerY, Ui.spacing Layout.endGameOverlay.colSpacing ]
+            [ Ui.el [ Ui.centerX, Font.size Layout.endGameOverlay.gameOver.fontSize, Font.bold ] <|
                 Ui.text "Game Over"
-            , Ui.el [ Ui.centerX, Font.size 20 ] <| viewGameId props.initialInt
-            , Ui.el [ Ui.centerX, Font.size 60, Font.bold ] <|
+            , Ui.el [ Ui.centerX, Font.size Layout.endGameOverlay.gameId.fontSize ] <| viewGameId props.initialInt
+            , Ui.el [ Ui.centerX, Font.size Layout.endGameOverlay.score.fontSize, Font.bold ] <|
                 viewScore props.score
             ]
 
 
 viewQueueCell : Content -> Ui.Element msg
 viewQueueCell content =
-    Ui.el [ Ui.width <| Ui.px 100, Ui.centerY ] <| viewContent content
+    Ui.el [ Ui.width <| Ui.px Layout.queueCell.width, Ui.centerY ] <| viewContent content
 
 
 viewContent : Content -> Ui.Element msg
@@ -245,9 +251,9 @@ viewBonus : Bonus -> Ui.Element msg
 viewBonus bonus =
     if bonus == Bonus then
         Ui.image
-            [ Ui.width <| Ui.px 15
-            , Ui.height <| Ui.px 15
-            , Ui.moveUp 10
+            [ Ui.width <| Ui.px Layout.bonus.width
+            , Ui.height <| Ui.px Layout.bonus.height
+            , Ui.moveUp Layout.bonus.moveUp
             ]
             { src = "images/bee.png", description = "Bee" }
 
@@ -267,18 +273,18 @@ viewTokenCount token =
                     ( Colours.tokenMainBg, Colours.tokenMainFont )
 
         outerAtts =
-            [ Ui.width <| Ui.px 25
-            , Ui.height <| Ui.px 25
+            [ Ui.width <| Ui.px Layout.token.outer.width
+            , Ui.height <| Ui.px Layout.token.outer.height
             , Background.color bgColour
-            , Border.rounded 10
+            , Border.rounded Layout.token.outer.borderRound
             , Ui.alignBottom
-            , Ui.moveDown 5
-            , Ui.moveRight 5
+            , Ui.moveDown Layout.token.outer.moveDown
+            , Ui.moveRight Layout.token.outer.moveRight
             , Ui.alignRight
             ]
 
         innerAtts =
-            [ Ui.centerX, Ui.centerY, Font.size 16, Font.color fontColour ]
+            [ Ui.centerX, Ui.centerY, Font.size Layout.token.inner.fontSize, Font.color fontColour ]
     in
     case Board.getTokenCount token of
         Just count ->
@@ -293,8 +299,8 @@ viewTokenCount token =
 
 sharedAttributes : List (Ui.Attribute msg)
 sharedAttributes =
-    [ Ui.width <| Ui.px 55
-    , Ui.height <| Ui.px 55
+    [ Ui.width <| Ui.px Layout.sharedAtts.width
+    , Ui.height <| Ui.px Layout.sharedAtts.height
     , Ui.centerX
     ]
 
@@ -353,32 +359,32 @@ cellVerticalAtts : Grid -> Cell -> List (Ui.Attribute msg)
 cellVerticalAtts grid cell =
     case ( Board.flushTo grid cell Above, Board.flushTo grid cell Below ) of
         ( True, True ) ->
-            [ Ui.height <| Ui.px 100 ]
+            [ Ui.height <| Ui.px Layout.cell.height.full ]
 
         ( True, False ) ->
-            [ Ui.height <| Ui.px 98, Ui.alignTop ]
+            [ Ui.height <| Ui.px Layout.cell.height.flushOne, Ui.alignTop ]
 
         ( False, True ) ->
-            [ Ui.height <| Ui.px 98, Ui.alignBottom ]
+            [ Ui.height <| Ui.px Layout.cell.height.flushOne, Ui.alignBottom ]
 
         ( False, False ) ->
-            [ Ui.height <| Ui.px 96, Ui.centerY ]
+            [ Ui.height <| Ui.px Layout.cell.height.flushNone, Ui.centerY ]
 
 
 cellHorizontalAtts : Grid -> Cell -> List (Ui.Attribute msg)
 cellHorizontalAtts grid cell =
     case ( Board.flushTo grid cell Right, Board.flushTo grid cell Left ) of
         ( True, True ) ->
-            [ Ui.width <| Ui.px 100 ]
+            [ Ui.width <| Ui.px Layout.cell.width.full ]
 
         ( True, False ) ->
-            [ Ui.width <| Ui.px 98, Ui.alignRight ]
+            [ Ui.width <| Ui.px Layout.cell.width.flushOne, Ui.alignRight ]
 
         ( False, True ) ->
-            [ Ui.width <| Ui.px 98, Ui.alignLeft ]
+            [ Ui.width <| Ui.px Layout.cell.width.flushOne, Ui.alignLeft ]
 
         ( False, False ) ->
-            [ Ui.width <| Ui.px 96, Ui.centerX ]
+            [ Ui.width <| Ui.px Layout.cell.width.flushNone, Ui.centerX ]
 
 
 cellCornerAtts : Grid -> Cell -> Ui.Attribute msg
@@ -389,7 +395,7 @@ cellCornerAtts grid cell =
                 0
 
             else
-                8
+                Layout.cell.cornerRound
     in
     Border.roundEach
         { topRight = Board.cornerBaseMatch grid cell [ Above, Right ] |> round
