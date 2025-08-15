@@ -131,26 +131,25 @@ update msg model =
 updateModelAfterPlacingToken : Model -> Coord -> Model
 updateModelAfterPlacingToken oldModel coord =
     let
-        ( nextQueue, nextQueueSeed ) =
-            Random.step
-                (Gen.queueGenerator oldModel.score)
-                oldModel.currentSeed
-
         newGrid =
             Board.placeTokenOnGrid oldModel.board.grid
                 (Tuple.first oldModel.board.queue)
                 coord
 
-        newQueue =
+        ( newQueue, newCurrentSeed ) =
             case oldModel.board.queue of
                 ( _, [ Harvester ] ) ->
-                    ( Harvester, nextQueue )
+                    let
+                        ( nextQueue, nextQueueSeed ) =
+                            Random.step (Gen.queueGenerator oldModel.score) oldModel.currentSeed
+                    in
+                    ( ( Harvester, nextQueue ), nextQueueSeed )
 
                 ( _, x :: xs ) ->
-                    ( x, xs )
+                    ( ( x, xs ), oldModel.currentSeed )
 
                 _ ->
-                    oldModel.board.queue
+                    ( oldModel.board.queue, oldModel.currentSeed )
 
         newBoard =
             { grid = newGrid, queue = newQueue }
@@ -158,13 +157,7 @@ updateModelAfterPlacingToken oldModel coord =
     { oldModel
         | gameState = Board.advanceGameStateAfterPlacement newBoard
         , board = newBoard
-        , currentSeed =
-            case oldModel.board.queue of
-                ( _, [ Harvester ] ) ->
-                    nextQueueSeed
-
-                _ ->
-                    oldModel.currentSeed
+        , currentSeed = newCurrentSeed
         , undoAllowed = True
         , undoSeed = oldModel.currentSeed
         , undoBoard = oldModel.board
