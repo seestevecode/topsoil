@@ -1,6 +1,6 @@
-module App.Messages exposing (..)
+module Messages exposing (..)
 
-import Domain.Types exposing (Coord)
+import Types exposing (Coord)
 
 
 type Msg

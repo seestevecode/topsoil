@@ -1,4 +1,4 @@
-module UI.Layout exposing (..)
+module Layout exposing (..)
 
 
 layout : { padding : Int, width : Int }

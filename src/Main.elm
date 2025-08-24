@@ -1,15 +1,15 @@
 module Main exposing (main)
 
-import App.Messages as M
+import Board
 import Browser
-import Domain.Constants as Const
-import Domain.Types exposing (..)
-import Game.Board as Board
-import Game.Gen as Gen
+import Constants as Const
+import Gen
 import Html exposing (Html)
 import List.Extra as ListX
+import Messages as M
 import Random
-import UI.View as View
+import Types exposing (..)
+import View
 
 
 main : Program Int Model M.Msg

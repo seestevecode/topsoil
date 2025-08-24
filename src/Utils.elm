@@ -1,4 +1,4 @@
-module Utils.Basic exposing (..)
+module Utils exposing (..)
 
 
 applyUntil : (a -> Bool) -> (a -> a) -> a -> a

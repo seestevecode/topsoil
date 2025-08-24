@@ -1,4 +1,4 @@
-module UI.Colours exposing (..)
+module Colours exposing (..)
 
 import Element exposing (Color, rgb255, rgba255)
 

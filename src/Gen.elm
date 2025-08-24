@@ -1,4 +1,4 @@
-module Game.Gen exposing
+module Gen exposing
     ( bonusGenerator
     , contentGenerator
     , initCoordsGenerator
@@ -7,10 +7,10 @@ module Game.Gen exposing
     , tokenGenerator
     )
 
-import Domain.Constants as Const
-import Domain.Types exposing (..)
+import Constants as Const
 import Random
 import Random.List
+import Types exposing (..)
 
 
 queueGenerator : Int -> Random.Generator (List Content)

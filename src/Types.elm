@@ -1,4 +1,4 @@
-module Domain.Types exposing (..)
+module Types exposing (..)
 
 import Set exposing (Set)
 

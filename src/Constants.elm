@@ -1,7 +1,7 @@
-module Domain.Constants exposing (..)
+module Constants exposing (..)
 
-import Domain.Types exposing (..)
 import List.Extra as ListX
+import Types exposing (..)
 
 
 axis : List Int

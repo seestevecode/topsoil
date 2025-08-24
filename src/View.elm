@@ -1,19 +1,19 @@
-module UI.View exposing (..)
+module View exposing (..)
 
-import App.Messages as M
-import Domain.Constants as Const
-import Domain.Types exposing (..)
+import Board
+import Colours
+import Constants as Const
 import Element as Ui
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
-import Game.Board as Board
 import Html exposing (Html)
+import Layout
 import List.Extra as ListX
-import UI.Colours as Colours
-import UI.Layout as Layout
+import Messages as M
+import Types exposing (..)
 
 
 

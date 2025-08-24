@@ -1,10 +1,10 @@
-module Game.Board exposing (..)
+module Board exposing (..)
 
-import Domain.Constants as Const
-import Domain.Types exposing (..)
+import Constants as Const
 import Set
 import Simplex
-import Utils.Basic as Utils
+import Types exposing (..)
+import Utils
 
 
 getBaseFromCoord : Int -> Coord -> Base
