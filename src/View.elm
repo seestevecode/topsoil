@@ -22,7 +22,7 @@ import Types exposing (..)
 
 viewLayout : { a | undoAllowed : Bool, board : Board, gameState : GameState, initialInt : Int, score : Int } -> Html M.Msg
 viewLayout props =
-    Ui.layout [ Ui.padding Layout.layout.padding, Background.color Colours.mainBackground ] <|
+    Ui.layout [ Ui.padding Layout.layout.padding, Background.color Colours.background.mainPage ] <|
         Ui.column
             [ Ui.width <| Ui.px Layout.layout.width
             , Ui.height Ui.fill
@@ -83,7 +83,7 @@ viewUndoButton : Bool -> Ui.Element M.Msg
 viewUndoButton undoAllowed =
     if undoAllowed then
         Input.button
-            [ Background.color <| Colours.buttonBackground
+            [ Background.color <| Colours.background.button
             , Ui.height <| Ui.px Layout.undoBtn.height
             , Ui.width <| Ui.px Layout.undoBtn.width
             , Ui.padding Layout.undoBtn.padding
@@ -127,7 +127,7 @@ viewCell board cell =
 viewMenuButton : Ui.Element M.Msg
 viewMenuButton =
     Input.button
-        [ Background.color Colours.buttonBackground
+        [ Background.color Colours.background.button
         , Ui.height <| Ui.px Layout.menuBtn.height
         , Ui.width <| Ui.px Layout.menuBtn.width
         , Ui.padding Layout.menuBtn.padding
@@ -189,7 +189,7 @@ viewQueue ( head, rest ) =
     let
         viewQueueHead =
             Ui.el
-                [ Background.color Colours.queueHeadBackground
+                [ Background.color Colours.background.queueHead
                 , Ui.height <| Ui.px Layout.queue.head.height
                 , Border.rounded Layout.queue.head.borderRound
                 ]
@@ -205,7 +205,7 @@ viewQueue ( head, rest ) =
 viewEndGameOverlay : { a | initialInt : Int, score : Int } -> Ui.Element msg
 viewEndGameOverlay props =
     Ui.el
-        [ Background.color Colours.endGameOverlay
+        [ Background.color Colours.background.endGameOverlay
         , Ui.width Ui.fill
         , Ui.height Ui.fill
         ]
@@ -267,10 +267,10 @@ viewTokenCount token =
         ( bgColour, fontColour ) =
             case token of
                 Disappearing _ ->
-                    ( Colours.tokenDisappearingBg, Colours.tokenDisappearingFont )
+                    ( Colours.tokenCount.disappearing.background, Colours.tokenCount.disappearing.font )
 
                 _ ->
-                    ( Colours.tokenMainBg, Colours.tokenMainFont )
+                    ( Colours.tokenCount.growing.background, Colours.tokenCount.growing.font )
 
         outerAtts =
             [ Ui.width <| Ui.px Layout.token.outer.width
@@ -413,10 +413,10 @@ tokenImageDetails : Token -> { src : String, description : String }
 tokenImageDetails token =
     let
         imageName =
-            Const.tokenDetails token |> .image
+            Const.tokenView token |> .image
 
         description =
-            Const.tokenDetails token |> .name
+            Const.tokenView token |> .name
     in
     { src = "images/" ++ imageName ++ ".png", description = description }
 
@@ -425,23 +425,23 @@ baseColour : Base -> Ui.Color
 baseColour base =
     case base of
         Base1 ->
-            Colours.mainBgBase1
+            Colours.cellBg.main.base1
 
         Base2 ->
-            Colours.mainBgBase2
+            Colours.cellBg.main.base2
 
         Base3 ->
-            Colours.mainBgBase3
+            Colours.cellBg.main.base3
 
 
 altBaseColour : Base -> Ui.Color
 altBaseColour base =
     case base of
         Base1 ->
-            Colours.altBgBase1
+            Colours.cellBg.alt.base1
 
         Base2 ->
-            Colours.altBgBase2
+            Colours.cellBg.alt.base2
 
         Base3 ->
-            Colours.altBgBase3
+            Colours.cellBg.alt.base3

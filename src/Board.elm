@@ -122,7 +122,7 @@ scoreHarvest cells =
                 |> Maybe.withDefault Standard1
 
         tokenMultiplier =
-            Const.tokenDetails harvestToken |> .baseScore |> Maybe.withDefault 0
+            Const.tokenScores harvestToken |> Maybe.withDefault 0
     in
     List.indexedMap (\index _ -> (index + bonusCount + 1) * tokenMultiplier)
         cells
