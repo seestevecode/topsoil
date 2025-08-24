@@ -1,4 +1,4 @@
-module View exposing (..)
+module View exposing (viewLayout)
 
 import Board
 import Colours
