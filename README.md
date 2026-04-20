@@ -1,37 +1,41 @@
-## Welcome to GitHub Pages
+# Topsoil
 
-You can use the [editor on GitHub](https://github.com/seestevecode/topsoil/edit/main/README.md) to maintain and preview the content for your website in Markdown files.
+Topsoil is an Elm port of a game I used to play on my iPhone.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## Status
 
-### Markdown
+The project is currently parked in a clean working state, while future improvements are planned.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## Running locally
 
-```markdown
-Syntax highlighted code block
+Build the app:
 
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```bash
+elm make src/Main.elm --output=app.js
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+Serve the project locally, for example:
 
-### Jekyll Themes
+```bash
+python3 -m http.server 8000
+```
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/seestevecode/topsoil/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+Then open: http://localhost:8000
 
-### Support or Contact
+## Roadmap
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+These are in no particular order and are intended only as an _aide memoire_ for me. There is no commitment that all (or indeed any) of these will be implemented.
+
+- [ ] Dark mode
+- [ ] Help bar
+- [ ] High scores (global and local)
+- [ ] Make replayable from seed
+- [ ] Responsive layout
+- [ ] Review and document scoring system
+- [ ] Start new game
+- [ ] Tutorial
+- [ ] User-selected themes
+
+## Deployment
+
+GitHub Pages is deployed from the `main` branch using GitHub Actions: https://code.seesteve.xyz/topsoil.
